@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/blevesearch/bleve/search"
+)
 
 func main() {
-	fmt.Println("hello world")
+	var s *search.Location
+	s = nil
+	fmt.Printf("hello world: %s\n", s)
 }
