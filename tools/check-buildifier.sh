@@ -9,7 +9,7 @@ else
 fi
 
 
-bazel build @com_github_bazelbuild_buildtools//buildifier:buildifier
+bazel $@ build @com_github_bazelbuild_buildtools//buildifier:buildifier
 RESULT=`find -name BUILD -or -name WORKSPACE | xargs bazel-bin/external/com_github_bazelbuild_buildtools/buildifier/buildifier $MODE -v`
 
 # In theory, buildifier should return a non-zero exit code in check mode if there are errors. From
