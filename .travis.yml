@@ -27,5 +27,5 @@ before_install:
 
 script:
   - tools/check-buildifier.sh --output_base=${HOME}/bazel/outbase
-  - bazel build --output_base=${HOME}/bazel/outbase ...
+  - bazel --output_base=${HOME}/bazel/outbase build ...
 
