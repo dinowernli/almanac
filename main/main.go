@@ -1,6 +1,7 @@
 package main
 
 import (
+	pb_logging "dinowernli.me/logging-tmp/proto"
 	"github.com/blevesearch/bleve"
 	"io/ioutil"
 	"log"
@@ -34,4 +35,9 @@ func main() {
 	}
 
 	log.Println(searchResults)
+
+	remoteRequest := &pb_logging.SearchRequest{
+		Query: "foo",
+	}
+	log.Println(remoteRequest)
 }
