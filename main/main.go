@@ -24,11 +24,24 @@ type remoteIndex struct {
 
 // indexService implements a grpc service representing a remote index.
 type indexService struct {
+	index bleve.Index
 }
 
 func (s *indexService) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
-	log.Println("handling search request: %v", request)
-	return &pb_logging.SearchResponse{}, nil
+	log.Printf("handling search request: %v\n", request)
+	bleveQuery := bleve.NewMatchQuery(request.Query)
+	bleveSearch := bleve.NewSearchRequest(bleveQuery)
+	bleveResult, err := s.index.Search(bleveSearch)
+	if err != nil {
+		log.Fatalf("failed to search: %v", err)
+	}
+
+	ids := []string{}
+	for _, hit := range bleveResult.Hits {
+		ids = append(ids, hit.ID)
+	}
+
+	return &pb_logging.SearchResponse{Ids: ids}, nil
 }
 
 func main() {
@@ -47,27 +60,33 @@ func main() {
 	index.Index("id1", &data{Name: "foo"})
 	index.Index("id2", &data{Name: "bar"})
 
-	query := bleve.NewMatchQuery("foo")
-	search := bleve.NewSearchRequest(query)
-	searchResults, err := index.Search(search)
-	if err != nil {
-		log.Fatalf("failed to search: %v", err)
-	}
-
-	log.Println(searchResults)
-
-	remoteRequest := &pb_logging.SearchRequest{
-		Query: "foo",
-	}
-	log.Println(remoteRequest)
-
 	log.Println("starting grpc server")
 
+	service := &indexService{index: index}
 	server := grpc.NewServer()
-	pb_logging.RegisterIndexServiceServer(server, &indexService{})
+	pb_logging.RegisterIndexServiceServer(server, service)
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", 12345))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		log.Fatalf("failed to listen: %v", err)
 	}
-	server.Serve(listen)
+	go func() {
+		server.Serve(listen)
+	}()
+
+	log.Println("dialing server")
+	connection, err := grpc.Dial("localhost:12345", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("failed to dial: %v", err)
+	}
+	defer connection.Close()
+
+	remoteRequest := &pb_logging.SearchRequest{Query: "foo"}
+	log.Println(remoteRequest)
+	client := pb_logging.NewIndexServiceClient(connection)
+	response, err := client.Search(context.Background(), remoteRequest)
+	if err != nil {
+		log.Fatalf("failed to make rpc: %v", err)
+	}
+
+	log.Printf("remote response: %v\n", response)
 }
