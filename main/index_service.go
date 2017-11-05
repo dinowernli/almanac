@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	pb_logging "dinowernli.me/logging-tmp/proto"
+	pb_logging "dinowernli.me/almanac/proto"
 
 	"github.com/blevesearch/bleve"
 	"golang.org/x/net/context"

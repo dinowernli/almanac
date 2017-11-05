@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	pb_logging "dinowernli.me/logging-tmp/proto"
+	pb_logging "dinowernli.me/almanac/proto"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/document"
