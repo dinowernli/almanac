@@ -26,6 +26,7 @@ before_install:
   - sudo dpkg -i bazel_0.7.0-linux-x86_64.deb
 
 script:
-  - tools/check-buildifier.sh --output_base=${HOME}/bazel/outbase
-  - bazel --output_base=${HOME}/bazel/outbase build ...
+  - export BAZEL_ARGS=--output_base=${HOME}
+  - tools/check-buildifier.sh
+  - bazel $BAZEL_ARGS build ...
 
