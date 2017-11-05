@@ -23,5 +23,5 @@ before_install:
 
 script:
   - tools/check-buildifier.sh
-  - bazel test ...
+  - bazel build ...
 
