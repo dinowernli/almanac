@@ -1,11 +1,11 @@
 syntax = "proto3";
 
 message SearchRequest {
-  string query = 1;
+  bytes bleve_request_bytes = 1;
 }
 
 message SearchResponse {
-  repeated string ids = 1;
+  bytes bleve_response_bytes = 1;
 }
 
 service IndexService {
