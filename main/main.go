@@ -27,6 +27,25 @@ type indexService struct {
 	index bleve.Index
 }
 
+func (s *indexService) Index(id string, data interface{}) error {
+	return s.index.Index(id, data)
+}
+
+func newIndexService() (*indexService, error) {
+	dir, err := ioutil.TempDir("", "index.bleve")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tempfile: %v", err)
+	}
+	log.Printf("created directory: %s", dir)
+
+	mapping := bleve.NewIndexMapping()
+	index, err := bleve.New(dir, mapping)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create index: %v", err)
+	}
+	return &indexService{index: index}, nil
+}
+
 func (s *indexService) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
 	log.Printf("handling search request: %v\n", request)
 	bleveQuery := bleve.NewMatchQuery(request.Query)
@@ -45,24 +64,14 @@ func (s *indexService) Search(ctx context.Context, request *pb_logging.SearchReq
 }
 
 func main() {
-	dir, err := ioutil.TempDir("", "index.bleve")
+	service, err := newIndexService()
 	if err != nil {
-		log.Fatalf("failed to create tempfile: %v", err)
+		log.Fatalf("failed to create index service: %v", err)
 	}
-	log.Printf("created directory: %s", dir)
+	service.Index("id1", &data{Name: "foo"})
+	service.Index("id2", &data{Name: "bar"})
+	log.Println("created index")
 
-	mapping := bleve.NewIndexMapping()
-	index, err := bleve.New(dir, mapping)
-	if err != nil {
-		log.Fatalf("failed to create index: %v", err)
-	}
-
-	index.Index("id1", &data{Name: "foo"})
-	index.Index("id2", &data{Name: "bar"})
-
-	log.Println("starting grpc server")
-
-	service := &indexService{index: index}
 	server := grpc.NewServer()
 	pb_logging.RegisterIndexServiceServer(server, service)
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", 12345))
@@ -72,21 +81,20 @@ func main() {
 	go func() {
 		server.Serve(listen)
 	}()
+	log.Println("started grpc server")
 
-	log.Println("dialing server")
 	connection, err := grpc.Dial("localhost:12345", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err)
 	}
 	defer connection.Close()
+	log.Println("opened grpc connection")
 
 	remoteRequest := &pb_logging.SearchRequest{Query: "foo"}
-	log.Println(remoteRequest)
 	client := pb_logging.NewIndexServiceClient(connection)
 	response, err := client.Search(context.Background(), remoteRequest)
 	if err != nil {
 		log.Fatalf("failed to make rpc: %v", err)
 	}
-
-	log.Printf("remote response: %v\n", response)
+	log.Printf("executed query, got remote response: %v\n", response)
 }
