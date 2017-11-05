@@ -4,6 +4,7 @@ go_binary(
     name = "main",
     srcs = ["main.go"],
     deps = [
+        "@com_github_blevesearch_bleve//mapping:go_default_library",
         "@com_github_blevesearch_bleve//search:go_default_library",
     ],
 )
