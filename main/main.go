@@ -6,6 +6,7 @@ import (
 	"net"
 
 	pb_logging "dinowernli.me/almanac/proto"
+	"dinowernli.me/almanac/storage"
 
 	"github.com/blevesearch/bleve"
 	"google.golang.org/grpc"
@@ -16,6 +17,16 @@ type data struct {
 }
 
 func main() {
+	diskStorage, err := storage.NewTempDiskStorage()
+	if err != nil {
+		log.Fatalf("unable to create storage: %v", err)
+	}
+
+	err = diskStorage.Write("fileid", []byte("hello"))
+	if err != nil {
+		log.Fatalf("unable to write to storage: %v", err)
+	}
+
 	service, err := newIndexService()
 	if err != nil {
 		log.Fatalf("failed to create index service: %v", err)
