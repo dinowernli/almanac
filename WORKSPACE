@@ -15,6 +15,10 @@ proto_register_toolchains()
 
 go_repository(
     name = "com_github_blevesearch_bleve",
+
+    # Bleve has a few proto files checked in, but also checks in the corresponding
+    # go code. Disable proto rule generation.
+    build_file_proto_mode = "disable",
     commit = "6eea5b78da004393b1d06b8c88d1bed9ca0a94b2",
     importpath = "github.com/blevesearch/bleve",
 )
