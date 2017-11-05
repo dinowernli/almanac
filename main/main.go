@@ -17,11 +17,6 @@ type data struct {
 	Name string
 }
 
-// remoteIndex implements Bleve's Index interface, backed by a remote
-// implementation of the index service.
-type remoteIndex struct {
-}
-
 // indexService implements a grpc service representing a remote index.
 type indexService struct {
 	index bleve.Index
@@ -97,4 +92,10 @@ func main() {
 		log.Fatalf("failed to make rpc: %v", err)
 	}
 	log.Printf("executed query, got remote response: %v\n", response)
+
+	remoteIndex := &remoteIndex{address: "localhost:12345"}
+	bleveQuery := bleve.NewMatchQuery("foo")
+	bleveSearch := bleve.NewSearchRequest(bleveQuery)
+	remoteIndex.Search(bleveSearch)
+	log.Printf("done searching remotely")
 }
