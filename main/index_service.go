@@ -17,10 +17,6 @@ type indexService struct {
 	index bleve.Index
 }
 
-func (s *indexService) Index(id string, data interface{}) error {
-	return s.index.Index(id, data)
-}
-
 func newIndexService() (*indexService, error) {
 	dir, err := ioutil.TempDir("", "index.bleve")
 	if err != nil {
@@ -34,6 +30,10 @@ func newIndexService() (*indexService, error) {
 		return nil, fmt.Errorf("failed to create index: %v", err)
 	}
 	return &indexService{index: index}, nil
+}
+
+func (s *indexService) Index(id string, data interface{}) error {
+	return s.index.Index(id, data)
 }
 
 func (s *indexService) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
@@ -53,4 +53,12 @@ func (s *indexService) Search(ctx context.Context, request *pb_logging.SearchReq
 		return nil, fmt.Errorf("unable to marshal response: %v", err)
 	}
 	return &pb_logging.SearchResponse{BleveResponseBytes: bleveResultBytes}, nil
+}
+
+func (s *indexService) Serialize() (*pb_logging.Store, error) {
+	_, kvstore, err := s.index.Advanced()
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve kvstore: %v", err)
+	}
+	return SerializeStore(kvstore)
 }
