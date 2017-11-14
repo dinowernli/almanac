@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package almanac;
+
 message SearchRequest {
   bytes bleve_request_bytes = 1;
 }
