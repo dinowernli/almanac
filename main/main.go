@@ -17,6 +17,9 @@ type data struct {
 }
 
 func main() {
+	RegisterStore()
+	log.Println("Registered store under name: %s", StoreName)
+
 	diskStorage, err := storage.NewTempDiskStorage()
 	if err != nil {
 		log.Fatalf("unable to create storage: %v", err)
