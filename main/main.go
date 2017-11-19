@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("unable to write to storage: %v", err)
 	}
 
-	service, err := newIndexService()
+	service, err := index.NewIndexService()
 	if err != nil {
 		log.Fatalf("failed to create index service: %v", err)
 	}
@@ -50,7 +50,7 @@ func main() {
 	}()
 	log.Println("started grpc server")
 
-	indexAlias := bleve.NewIndexAlias(&remoteIndex{address: "localhost:12345"})
+	indexAlias := bleve.NewIndexAlias(index.NewRemoteIndex("localhost:12345"))
 	bleveQuery := bleve.NewMatchQuery("foo")
 	bleveSearch := bleve.NewSearchRequest(bleveQuery)
 	bleveResult, err := indexAlias.Search(bleveSearch)

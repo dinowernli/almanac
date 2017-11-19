@@ -1,4 +1,4 @@
-package main
+package index
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 
-	"dinowernli.me/almanac/index"
 	pb_logging "dinowernli.me/almanac/proto"
 
 	"github.com/blevesearch/bleve"
@@ -18,7 +17,7 @@ type indexService struct {
 	index bleve.Index
 }
 
-func newIndexService() (*indexService, error) {
+func NewIndexService() (*indexService, error) {
 	dir, err := ioutil.TempDir("", "index.bleve")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tempfile: %v", err)
@@ -61,5 +60,5 @@ func (s *indexService) Serialize() (*pb_logging.Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve kvstore: %v", err)
 	}
-	return index.SerializeStore(kvstore)
+	return SerializeStore(kvstore)
 }
