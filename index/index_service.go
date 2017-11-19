@@ -1,4 +1,4 @@
-package main
+package index
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ type indexService struct {
 	index bleve.Index
 }
 
-func newIndexService() (*indexService, error) {
+func NewIndexService() (*indexService, error) {
 	dir, err := ioutil.TempDir("", "index.bleve")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tempfile: %v", err)

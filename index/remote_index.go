@@ -1,4 +1,4 @@
-package main
+package index
 
 import (
 	"encoding/json"
@@ -19,6 +19,10 @@ import (
 // calls to a remote IndexService.
 type remoteIndex struct {
 	address string
+}
+
+func NewRemoteIndex(address string) *remoteIndex {
+	return &remoteIndex{address: address}
 }
 
 func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
