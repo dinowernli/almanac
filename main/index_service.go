@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	"dinowernli.me/almanac/index"
 	pb_logging "dinowernli.me/almanac/proto"
 
 	"github.com/blevesearch/bleve"
@@ -60,5 +61,5 @@ func (s *indexService) Serialize() (*pb_logging.Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve kvstore: %v", err)
 	}
-	return SerializeStore(kvstore)
+	return index.SerializeStore(kvstore)
 }

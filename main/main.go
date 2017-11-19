@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"dinowernli.me/almanac/index"
 	pb_logging "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
@@ -17,8 +18,8 @@ type data struct {
 }
 
 func main() {
-	RegisterStore()
-	log.Println("Registered store under name: %s", StoreName)
+	index.RegisterStore()
+	log.Println("Registered store under name: %s", index.StoreName)
 
 	diskStorage, err := storage.NewTempDiskStorage()
 	if err != nil {
