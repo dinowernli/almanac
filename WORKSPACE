@@ -46,3 +46,27 @@ go_repository(
     commit = "23a2c8e5cf1f380f27722c6d2ae8896431dc7d0e",
     importpath = "github.com/blevesearch/go-porterstemmer",
 )
+
+go_repository(
+    name = "com_github_stretchr_objx",
+    commit = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94",
+    importpath = "github.com/stretchr/objx",
+)
+
+go_repository(
+    name = "com_github_stretchr_testify",
+    importpath = "github.com/stretchr/testify",
+    tag = "v1.1.3",
+)
+
+go_repository(
+    name = "com_github_davecgh_go_spew",
+    importpath = "github.com/davecgh/go-spew",
+    tag = "v1.1.0",
+)
+
+go_repository(
+    name = "com_github_pmezard_go_difflib",
+    importpath = "github.com/pmezard/go-difflib",
+    tag = "v1.0.0",
+)

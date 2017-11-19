@@ -62,3 +62,11 @@ func (s *indexService) Serialize() (*pb_logging.Store, error) {
 	}
 	return SerializeStore(kvstore)
 }
+
+func (s *indexService) Load(storeProto *pb_logging.Store) error {
+	_, kvstore, err := s.index.Advanced()
+	if err != nil {
+		return fmt.Errorf("unable to retrieve kvstore: %v", err)
+	}
+	return DeserializeStore(storeProto, kvstore)
+}

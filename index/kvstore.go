@@ -39,6 +39,7 @@ func SerializeStore(kvstore store.KVStore) (*pb_logging.Store, error) {
 			Key:   iterator.Key(),
 			Value: iterator.Value(),
 		})
+		iterator.Next()
 	}
 
 	return &pb_logging.Store{Entries: entries}, nil
