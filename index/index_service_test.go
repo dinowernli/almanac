@@ -3,9 +3,8 @@ package index
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/blevesearch/bleve"
+	"github.com/stretchr/testify/assert"
 )
 
 type data struct {

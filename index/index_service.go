@@ -15,6 +15,15 @@ import (
 // indexService implements a grpc service representing a remote index.
 type indexService struct {
 	index bleve.Index
+	path  string
+}
+
+func NewIndexServiceWithDir(dir string) (*indexService, error) {
+	index, err := bleve.Open(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create index: %v", err)
+	}
+	return &indexService{index: index, path: dir}, nil
 }
 
 func NewIndexService() (*indexService, error) {
@@ -29,7 +38,7 @@ func NewIndexService() (*indexService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index: %v", err)
 	}
-	return &indexService{index: index}, nil
+	return &indexService{index: index, path: dir}, nil
 }
 
 func (s *indexService) Index(id string, data interface{}) error {
