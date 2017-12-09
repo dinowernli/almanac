@@ -15,6 +15,15 @@ import (
 // indexService implements a grpc service representing a remote index.
 type indexService struct {
 	index bleve.Index
+	path  string
+}
+
+func openIndexService(dir string) (*indexService, error) {
+	index, err := bleve.Open(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create index: %v", err)
+	}
+	return &indexService{index: index, path: dir}, nil
 }
 
 func NewIndexService() (*indexService, error) {
@@ -29,7 +38,7 @@ func NewIndexService() (*indexService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index: %v", err)
 	}
-	return &indexService{index: index}, nil
+	return &indexService{index: index, path: dir}, nil
 }
 
 func (s *indexService) Index(id string, data interface{}) error {
@@ -53,20 +62,4 @@ func (s *indexService) Search(ctx context.Context, request *pb_logging.SearchReq
 		return nil, fmt.Errorf("unable to marshal response: %v", err)
 	}
 	return &pb_logging.SearchResponse{BleveResponseBytes: bleveResultBytes}, nil
-}
-
-func (s *indexService) Serialize() (*pb_logging.Store, error) {
-	_, kvstore, err := s.index.Advanced()
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve kvstore: %v", err)
-	}
-	return SerializeStore(kvstore)
-}
-
-func (s *indexService) Load(storeProto *pb_logging.Store) error {
-	_, kvstore, err := s.index.Advanced()
-	if err != nil {
-		return fmt.Errorf("unable to retrieve kvstore: %v", err)
-	}
-	return DeserializeStore(storeProto, kvstore)
 }

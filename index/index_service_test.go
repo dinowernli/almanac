@@ -3,9 +3,8 @@ package index
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/blevesearch/bleve"
+	"github.com/stretchr/testify/assert"
 )
 
 type data struct {
@@ -31,29 +30,6 @@ func TestSearch(t *testing.T) {
 	result, err := searchIndex(indexService, "foo")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(result.Hits))
-}
-
-func TestSerializeAndLoad(t *testing.T) {
-	indexService1, err := NewIndexService()
-	assert.NoError(t, err)
-
-	err = indexService1.Index("id1", &data{Name: "foo"})
-	assert.NoError(t, err)
-
-	storeProto, err := indexService1.Serialize()
-	assert.NoError(t, err)
-
-	indexService2, err := NewIndexService()
-	assert.NoError(t, err)
-
-	err = indexService2.Load(storeProto)
-	assert.NoError(t, err)
-
-	_, err = searchIndex(indexService2, "foo")
-	assert.NoError(t, err)
-
-	// TODO(dino): Figure out why this currently fails.
-	// assert.Equal(t, 1, len(result.Hits))
 }
 
 func searchIndex(indexService *indexService, match string) (*bleve.SearchResult, error) {
