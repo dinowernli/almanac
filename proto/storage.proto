@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package almanac;
+
+// A log entry.
+message LogEntry {
+  // The json representation of the entry as supplied by the user.
+  string entry_json = 1;
+
+  // An epoch timestamp in milliseconds associated with this entry.
+  int64 timestamp_ms = 2;
+}
+
+message BleveIndex {
+  // Holds the bytes corresponding to a zip archive containing the entire
+  // directory tree as used by Bleve.
+  bytes directory_zip = 1;
+}
+
+// Represents a chunk of log entries and some additional information about the
+// entries.
+message Chunk {
+  // The raw entries present in this chunk.
+  repeated LogEntry entries = 1;
+
+  // An serialized index which can be used to perform searches.
+  BleveIndex index = 2;
+}

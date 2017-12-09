@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"dinowernli.me/almanac/appender"
 	"dinowernli.me/almanac/index"
 	pb_logging "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
@@ -18,6 +19,8 @@ type data struct {
 }
 
 func main() {
+	appender.New()
+
 	diskStorage, err := storage.NewTempDiskStorage()
 	if err != nil {
 		log.Fatalf("unable to create storage: %v", err)

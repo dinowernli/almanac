@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package almanac;
-
-message BleveIndex {
-  // Holds the bytes corresponding to a zip archive containing the entire
-  // directory tree as used by Bleve.
-  bytes directory_zip = 1;
-}

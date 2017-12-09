@@ -4,6 +4,7 @@ go_binary(
     name = "main",
     srcs = glob(["*.go"]),
     deps = [
+        "//appender:go_default_library",
         "//index:go_default_library",
         "//proto:go_default_library",
         "//storage:go_default_library",
