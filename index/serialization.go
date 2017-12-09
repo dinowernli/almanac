@@ -13,6 +13,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 )
 
+// Serialize returns a proto with the contents of the supplied index.
 func Serialize(index *indexService) (*pb_almanac.BleveIndex, error) {
 	buffer := &bytes.Buffer{}
 	zipWriter := zip.NewWriter(buffer)
@@ -74,6 +75,8 @@ func Serialize(index *indexService) (*pb_almanac.BleveIndex, error) {
 	}, nil
 }
 
+// Deserialize returns an instance of indexService which has loaded the
+// supplied index proto.
 func Deserialize(proto *pb_almanac.BleveIndex) (*indexService, error) {
 	bytesReader := bytes.NewReader(proto.DirectoryZip)
 	bytesNum := int64(len(proto.DirectoryZip))
@@ -111,7 +114,7 @@ func Deserialize(proto *pb_almanac.BleveIndex) (*indexService, error) {
 		}
 	}
 
-	result, err := NewIndexServiceWithDir(root)
+	result, err := openIndexService(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index service: %v", err)
 	}

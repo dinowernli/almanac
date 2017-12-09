@@ -18,7 +18,7 @@ type indexService struct {
 	path  string
 }
 
-func NewIndexServiceWithDir(dir string) (*indexService, error) {
+func openIndexService(dir string) (*indexService, error) {
 	index, err := bleve.Open(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index: %v", err)
