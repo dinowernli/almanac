@@ -2,15 +2,6 @@ syntax = "proto3";
 
 package almanac;
 
-message Entry {
-  bytes key = 1;
-  bytes value = 2;
-}
-
-message Store {
-  repeated Entry entries = 1;
-}
-
 message BleveIndex {
   // Holds the bytes corresponding to a zip archive containing the entire
   // directory tree as used by Bleve.
