@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package almanac;
+
+import "proto/storage.proto";
+
+// A request to record append a log entry to an open chunk.
+message AppendRequest {
+  LogEntry entry = 1;
+}
+
+message AppendResponse {
+}
+
+service Appender {
+  rpc Append (AppendRequest) returns (AppendResponse);
+}
+
+// A request to ingest a single log entry into the system.
+message IngestRequest {
+  // A json object representing the entry to ingest.
+  string entry_json = 1;
+}
+
+message IngestResponse {
+}
+
+service Ingester {
+  rpc Ingest (IngestRequest) returns (IngestResponse);
+}
+
+message SearchRequest {
+  bytes bleve_request_bytes = 1;
+}
+
+message SearchResponse {
+  bytes bleve_response_bytes = 1;
+}
+
+// TODO(dino): Rename this to Query or Mixer.
+service IndexService {
+  rpc Search (SearchRequest) returns (SearchResponse);
+}

@@ -5,12 +5,17 @@ import (
 	"log"
 	"net"
 
+	"dinowernli.me/almanac/appender"
 	"dinowernli.me/almanac/index"
 	pb_logging "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
 	"github.com/blevesearch/bleve"
 	"google.golang.org/grpc"
+)
+
+const (
+	maxEntriesPerChunk = 4
 )
 
 type data struct {
@@ -28,7 +33,7 @@ func main() {
 		log.Fatalf("unable to write to storage: %v", err)
 	}
 
-	service, err := index.NewIndexService()
+	service, err := index.NewIndex()
 	if err != nil {
 		log.Fatalf("failed to create index service: %v", err)
 	}
@@ -38,6 +43,10 @@ func main() {
 
 	server := grpc.NewServer()
 	pb_logging.RegisterIndexServiceServer(server, service)
+
+	appender := appender.New(diskStorage, maxEntriesPerChunk)
+	pb_logging.RegisterAppenderServer(server, appender)
+
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", 12345))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

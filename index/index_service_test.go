@@ -12,7 +12,7 @@ type data struct {
 }
 
 func TestSearch_Empty(t *testing.T) {
-	indexService, err := NewIndexService()
+	indexService, err := NewIndex()
 	assert.NoError(t, err)
 
 	result, err := searchIndex(indexService, "foo")
@@ -21,7 +21,7 @@ func TestSearch_Empty(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
-	indexService, err := NewIndexService()
+	indexService, err := NewIndex()
 	assert.NoError(t, err)
 
 	err = indexService.Index("id1", &data{Name: "foo"})
@@ -32,9 +32,9 @@ func TestSearch(t *testing.T) {
 	assert.Equal(t, 1, len(result.Hits))
 }
 
-func searchIndex(indexService *indexService, match string) (*bleve.SearchResult, error) {
+func searchIndex(index *Index, match string) (*bleve.SearchResult, error) {
 	// TODO(dino): Change remote_index to take a client rather than an address.
 	// For now, just fish out the index to query it.
 	bleveRequest := bleve.NewSearchRequest(bleve.NewMatchQuery("foo"))
-	return indexService.index.Search(bleveRequest)
+	return index.index.Search(bleveRequest)
 }

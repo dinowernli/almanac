@@ -12,7 +12,7 @@ type content struct {
 }
 
 func TestRoundtrip(t *testing.T) {
-	indexService, err := NewIndexService()
+	indexService, err := NewIndex()
 	assert.NoError(t, err)
 
 	err = indexService.Index("id1", &content{Name: "foo"})
@@ -29,6 +29,6 @@ func TestRoundtrip(t *testing.T) {
 	assert.Equal(t, 1, len(result.Hits))
 }
 
-func search(indexService *indexService, match string) (*bleve.SearchResult, error) {
-	return indexService.index.Search(bleve.NewSearchRequest(bleve.NewMatchQuery(match)))
+func search(index *Index, match string) (*bleve.SearchResult, error) {
+	return index.index.Search(bleve.NewSearchRequest(bleve.NewMatchQuery(match)))
 }
