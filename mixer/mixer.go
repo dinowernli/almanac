@@ -28,12 +28,41 @@ func New(storage storage.Storage, discovery *discovery.Discovery) *mixer {
 }
 
 func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
+	indexes := []bleve.Index{}
+
+	// Load all relevant chunks as indexes.
+	chunks, err := m.loadChunks(request)
+	if err != nil {
+		return nil, grpc.Errorf(code.Internal, "unable to load chunks: %v", err)
+	}
+	for _, chunkIndex := range chunks {
+		indexes = append(indexes, chunkIndex)
+	}
+
+	// Gather all relevant appenders.
+	appenders, err := m.loadAppenders()
+	if err != nil {
+		return nil, grpc.Errorf(code.Internal, "unable to load appenders: %v", err)
+	}
+	for _, appenderIndex := range appenders {
+		indexes = append(indexes, appenderIndex)
+	}
+
+	// TODO(dino): Create an aliasindex for all the indexes and execute a search.
 
 	return nil, grpc.Errorf(codes.Unimplemented, "search not implemented")
 }
 
+func (m *mixer) loadAppenders() ([]bleve.Index, error) {
+	result := []bleve.Index{}
+	for _, _ = range m.discovery.ListAppenders() {
+		// TODO(dino): Create a remote index and add to result.
+	}
+	return result, nil
+}
+
 // loadChunks returns all stored chunks which need to be searched for this request.
-func (m *mixer) loadChunks(request *pb_almanac.SearchRequest) ([]*pb_almanac.Chunk, error) {
+func (m *mixer) loadChunks(request *pb_almanac.SearchRequest) ([]bleve.Index, error) {
 	// TODO(dino): Add more information to the chunk names, making it easier to only
 	// load subsets of all chunks. For now, return them all.
 	chunkKeys, err := m.storage.List(chunkPrefix)
