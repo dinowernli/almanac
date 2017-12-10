@@ -12,8 +12,9 @@ import (
 )
 
 type appender struct {
-	entries            []*pb_almanac.LogEntry
-	appendMutex        *sync.Mutex
+	entries     []*pb_almanac.LogEntry
+	appendMutex *sync.Mutex
+
 	storage            storage.Storage
 	maxEntriesPerChunk int64
 }

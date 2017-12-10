@@ -14,7 +14,7 @@ import (
 )
 
 // Serialize returns a proto with the contents of the supplied index.
-func Serialize(index *indexService) (*pb_almanac.BleveIndex, error) {
+func Serialize(index *Index) (*pb_almanac.BleveIndex, error) {
 	buffer := &bytes.Buffer{}
 	zipWriter := zip.NewWriter(buffer)
 
@@ -77,7 +77,7 @@ func Serialize(index *indexService) (*pb_almanac.BleveIndex, error) {
 
 // Deserialize returns an instance of indexService which has loaded the
 // supplied index proto.
-func Deserialize(proto *pb_almanac.BleveIndex) (*indexService, error) {
+func Deserialize(proto *pb_almanac.BleveIndex) (*Index, error) {
 	bytesReader := bytes.NewReader(proto.DirectoryZip)
 	bytesNum := int64(len(proto.DirectoryZip))
 	zipReader, err := zip.NewReader(bytesReader, bytesNum)

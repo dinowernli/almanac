@@ -12,21 +12,21 @@ import (
 	"golang.org/x/net/context"
 )
 
-// indexService implements a grpc service representing a remote index.
-type indexService struct {
+// Index implements a grpc service representing a remote index.
+type Index struct {
 	index bleve.Index
 	path  string
 }
 
-func openIndexService(dir string) (*indexService, error) {
+func openIndexService(dir string) (*Index, error) {
 	index, err := bleve.Open(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index: %v", err)
 	}
-	return &indexService{index: index, path: dir}, nil
+	return &Index{index: index, path: dir}, nil
 }
 
-func NewIndexService() (*indexService, error) {
+func NewIndexService() (*Index, error) {
 	dir, err := ioutil.TempDir("", "index.bleve")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tempfile: %v", err)
@@ -38,14 +38,14 @@ func NewIndexService() (*indexService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index: %v", err)
 	}
-	return &indexService{index: index, path: dir}, nil
+	return &Index{index: index, path: dir}, nil
 }
 
-func (s *indexService) Index(id string, data interface{}) error {
+func (s *Index) Index(id string, data interface{}) error {
 	return s.index.Index(id, data)
 }
 
-func (s *indexService) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
+func (s *Index) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
 	bleveSearchRequest := &bleve.SearchRequest{}
 	err := json.Unmarshal(request.BleveRequestBytes, bleveSearchRequest)
 	if err != nil {

@@ -29,6 +29,6 @@ func TestRoundtrip(t *testing.T) {
 	assert.Equal(t, 1, len(result.Hits))
 }
 
-func search(indexService *indexService, match string) (*bleve.SearchResult, error) {
-	return indexService.index.Search(bleve.NewSearchRequest(bleve.NewMatchQuery(match)))
+func search(index *Index, match string) (*bleve.SearchResult, error) {
+	return index.index.Search(bleve.NewSearchRequest(bleve.NewMatchQuery(match)))
 }
