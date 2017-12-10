@@ -7,6 +7,7 @@ import (
 
 	"dinowernli.me/almanac/appender"
 	"dinowernli.me/almanac/index"
+	"dinowernli.me/almanac/mixer"
 	pb_logging "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
@@ -49,8 +50,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create appender: %v", err)
 	}
-
 	pb_logging.RegisterAppenderServer(server, appender)
+
+	_ = mixer.New(memoryStorage)
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", 12345))
 	if err != nil {
