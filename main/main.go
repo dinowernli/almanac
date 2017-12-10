@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("unable to write to storage: %v", err)
 	}
 
-	service, err := index.NewIndexService()
+	service, err := index.NewIndex()
 	if err != nil {
 		log.Fatalf("failed to create index service: %v", err)
 	}

@@ -114,7 +114,7 @@ func Deserialize(proto *pb_almanac.BleveIndex) (*Index, error) {
 		}
 	}
 
-	result, err := openIndexService(root)
+	result, err := openIndex(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index service: %v", err)
 	}

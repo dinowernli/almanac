@@ -12,7 +12,7 @@ type content struct {
 }
 
 func TestRoundtrip(t *testing.T) {
-	indexService, err := NewIndexService()
+	indexService, err := NewIndex()
 	assert.NoError(t, err)
 
 	err = indexService.Index("id1", &content{Name: "foo"})

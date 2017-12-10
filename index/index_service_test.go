@@ -12,7 +12,7 @@ type data struct {
 }
 
 func TestSearch_Empty(t *testing.T) {
-	indexService, err := NewIndexService()
+	indexService, err := NewIndex()
 	assert.NoError(t, err)
 
 	result, err := searchIndex(indexService, "foo")
@@ -21,7 +21,7 @@ func TestSearch_Empty(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
-	indexService, err := NewIndexService()
+	indexService, err := NewIndex()
 	assert.NoError(t, err)
 
 	err = indexService.Index("id1", &data{Name: "foo"})

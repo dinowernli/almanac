@@ -18,7 +18,7 @@ type Index struct {
 	path  string
 }
 
-func openIndexService(dir string) (*Index, error) {
+func openIndex(dir string) (*Index, error) {
 	index, err := bleve.Open(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create index: %v", err)
@@ -26,7 +26,7 @@ func openIndexService(dir string) (*Index, error) {
 	return &Index{index: index, path: dir}, nil
 }
 
-func NewIndexService() (*Index, error) {
+func NewIndex() (*Index, error) {
 	dir, err := ioutil.TempDir("", "index.bleve")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tempfile: %v", err)
