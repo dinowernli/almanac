@@ -134,7 +134,7 @@ func (a *appender) storeChunk() error {
 }
 
 func (a *appender) nextChunkName() string {
-	result := fmt.Sprintf("%s-chunk-%d", a.appenderId, a.chunkId)
+	result := fmt.Sprintf("chunk-%d-%s", a.chunkId, a.appenderId)
 	a.chunkId++
 	return result
 }

@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"dinowernli.me/almanac/appender"
+	"dinowernli.me/almanac/discovery"
 	"dinowernli.me/almanac/index"
 	"dinowernli.me/almanac/mixer"
 	pb_logging "dinowernli.me/almanac/proto"
@@ -52,8 +53,6 @@ func main() {
 	}
 	pb_logging.RegisterAppenderServer(server, appender)
 
-	_ = mixer.New(memoryStorage)
-
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", 12345))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -62,6 +61,12 @@ func main() {
 		server.Serve(listen)
 	}()
 	log.Println("started grpc server")
+
+	d, err := discovery.New([]string{"localhost:12345"})
+	if err != nil {
+		log.Fatalf("failed to start discovery: %v", err)
+	}
+	_ = mixer.New(memoryStorage, d)
 
 	indexAlias := bleve.NewIndexAlias(index.NewRemoteIndex("localhost:12345"))
 	bleveQuery := bleve.NewMatchQuery("foo")

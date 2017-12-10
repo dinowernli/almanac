@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path"
+	"strings"
 )
 
 const (
@@ -19,6 +20,9 @@ type Storage interface {
 
 	// Write stores the supplied bytes under the supplied id.
 	Write(id string, contents []byte) error
+
+	// List returns all keys which start with the supplied prefix.
+	List(prefix string) ([]string, error)
 }
 
 // NewTempDiskStorage creates a storage backed by a new temporary directory.
@@ -48,6 +52,10 @@ func (s *diskStorage) Write(id string, contents []byte) error {
 	return ioutil.WriteFile(s.filename(id), contents, 0644)
 }
 
+func (s *diskStorage) List(prefix string) ([]string, error) {
+	return nil, fmt.Errorf("List is not implemented for disk storage")
+}
+
 func (s *diskStorage) filename(id string) string {
 	return path.Join(s.path, id)
 }
@@ -73,4 +81,14 @@ func (s *inMemoryStorage) Read(id string) ([]byte, error) {
 func (s *inMemoryStorage) Write(id string, contents []byte) error {
 	s.data[id] = contents
 	return nil
+}
+
+func (s *inMemoryStorage) List(prefix string) ([]string, error) {
+	result := []string{}
+	for k, _ := range s.data {
+		if strings.HasPrefix(k, prefix) {
+			result = append(result, k)
+		}
+	}
+	return result, nil
 }
