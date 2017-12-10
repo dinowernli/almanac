@@ -10,6 +10,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -18,15 +19,17 @@ import (
 type appender struct {
 	entries     []*pb_almanac.LogEntry
 	index       *index.Index
+	chunkId     int
 	appendMutex *sync.Mutex
 
+	appenderId         string
 	storage            storage.Storage
 	maxEntriesPerChunk int
 }
 
 // New returns a new appender backed by the supplied storage.
-func New(storage storage.Storage, maxEntriesPerChunk int) (*appender, error) {
-	if maxEntriesPerChunk <= 0 {
+func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*appender, error) {
+	if maxEntriesPerChunk < 1 {
 		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxEntriesPerChunk)
 	}
 
@@ -96,8 +99,19 @@ func (a *appender) storeChunk() error {
 		Index:   indexProto,
 	}
 
-	// TODO(dino): Actually write this thing to storage.
-	log.Printf("writing chunk to storage not implemented, chunkProto: %v\n", chunkProto)
+	bytes, err := proto.Marshal(chunkProto)
+	if err != nil {
+		return fmt.Errorf("unable to marshal chunk proto: %v", err)
+	}
+	chunkName := a.nextChunkName()
+	a.storage.Write(chunkName, bytes)
+	log.Printf("wrote chunk: %s", chunkName)
 
 	return nil
+}
+
+func (a *appender) nextChunkName() string {
+	result := fmt.Sprintf("%s-chunk-%d", a.appenderId, a.chunkId)
+	a.chunkId++
+	return result
 }
