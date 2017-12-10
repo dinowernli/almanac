@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	"dinowernli.me/almanac/discovery"
+	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
+	"github.com/blevesearch/bleve"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -33,7 +35,7 @@ func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	// Load all relevant chunks as indexes.
 	chunks, err := m.loadChunks(request)
 	if err != nil {
-		return nil, grpc.Errorf(code.Internal, "unable to load chunks: %v", err)
+		return nil, grpc.Errorf(codes.Internal, "unable to load chunks: %v", err)
 	}
 	for _, chunkIndex := range chunks {
 		indexes = append(indexes, chunkIndex)
@@ -42,7 +44,7 @@ func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	// Gather all relevant appenders.
 	appenders, err := m.loadAppenders()
 	if err != nil {
-		return nil, grpc.Errorf(code.Internal, "unable to load appenders: %v", err)
+		return nil, grpc.Errorf(codes.Internal, "unable to load appenders: %v", err)
 	}
 	for _, appenderIndex := range appenders {
 		indexes = append(indexes, appenderIndex)
@@ -55,8 +57,8 @@ func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 
 func (m *mixer) loadAppenders() ([]bleve.Index, error) {
 	result := []bleve.Index{}
-	for _, _ = range m.discovery.ListAppenders() {
-		// TODO(dino): Create a remote index and add to result.
+	for _, a := range m.discovery.ListAppenders() {
+		result = append(result, index.NewRemoteIndex(a))
 	}
 	return result, nil
 }
@@ -84,5 +86,7 @@ func (m *mixer) loadChunks(request *pb_almanac.SearchRequest) ([]bleve.Index, er
 		}
 		result = append(result, chunk)
 	}
-	return result, nil
+
+	// TODO(dino): tranform chunks into indexes.
+	return nil, nil
 }

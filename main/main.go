@@ -68,7 +68,13 @@ func main() {
 	}
 	_ = mixer.New(memoryStorage, d)
 
-	indexAlias := bleve.NewIndexAlias(index.NewRemoteIndex("localhost:12345"))
+	conn, err := grpc.Dial("localhost:12345", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("failed to dial: %v", err)
+	}
+
+	mixerClient := pb_logging.NewMixerClient(conn)
+	indexAlias := bleve.NewIndexAlias(index.NewRemoteIndex(mixerClient))
 	bleveQuery := bleve.NewMatchQuery("foo")
 	bleveSearch := bleve.NewSearchRequest(bleveQuery)
 	bleveResult, err := indexAlias.Search(bleveSearch)

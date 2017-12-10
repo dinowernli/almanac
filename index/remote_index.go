@@ -17,42 +17,28 @@ import (
 
 // searchClient represents the interface needed to perform remote searches.
 type searchClient interface {
-	Search(ctx context.Context, connection *grpc.ClientConn, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error)
-}
-
-type appenderSearchClient struct {
-}
-
-func (c *appenderSearchClient) Search(ctx context.Context, connection *grpc.ClientConn, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
-	return pb_logging.NewAppenderClient(connection).Search(ctx, request)
+	Search(ctx context.Context, request *pb_logging.SearchRequest, opts ...grpc.CallOption) (*pb_logging.SearchResponse, error)
 }
 
 // remoteIndex is an implementation of Bleve's Index interface which delegates
 // calls to a remote IndexService.
 type remoteIndex struct {
-	address string
-	client  searchClient
+	client searchClient
 }
 
-func NewRemoteIndex(address string) *remoteIndex {
-	return &remoteIndex{address: address, client: &appenderSearchClient{}}
+func NewRemoteIndex(client searchClient) *remoteIndex {
+	return &remoteIndex{client: client}
 }
 
 // TODO(dino): move the body of this into the with-context version below.
 func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
-	connection, err := grpc.Dial("localhost:12345", grpc.WithInsecure())
-	if err != nil {
-		return nil, fmt.Errorf("failed to dial: %v", err)
-	}
-	defer connection.Close()
-
 	bleveRequestBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marsal request: %v", err)
 	}
 
 	remoteRequest := &pb_logging.SearchRequest{BleveRequestBytes: bleveRequestBytes}
-	response, err := i.client.Search(context.Background(), connection, remoteRequest)
+	response, err := i.client.Search(context.Background(), remoteRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make rpc: %v", err)
 	}
