@@ -17,16 +17,14 @@ import (
 
 // searchClient represents the interface needed to perform remote searches.
 type searchClient interface {
-	Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error)
+	Search(ctx context.Context, connection *grpc.ClientConn, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error)
 }
 
-// TODO(dino): Finish plumbing this, allowing the remote index to operate on any
-// remote service which supports queries.
 type appenderSearchClient struct {
 }
 
-func (c *appenderSearchClient) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
-	return nil, fmt.Errorf("search not implemented")
+func (c *appenderSearchClient) Search(ctx context.Context, connection *grpc.ClientConn, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
+	return pb_logging.NewAppenderClient(connection).Search(ctx, request)
 }
 
 // remoteIndex is an implementation of Bleve's Index interface which delegates
@@ -54,8 +52,7 @@ func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, 
 	}
 
 	remoteRequest := &pb_logging.SearchRequest{BleveRequestBytes: bleveRequestBytes}
-	client := pb_logging.NewIndexServiceClient(connection)
-	response, err := client.Search(context.Background(), remoteRequest)
+	response, err := i.client.Search(context.Background(), connection, remoteRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make rpc: %v", err)
 	}

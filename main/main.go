@@ -30,16 +30,18 @@ func main() {
 		log.Fatalf("unable to write to storage: %v", err)
 	}
 
-	service, err := index.NewIndex()
+	index1, err := index.NewIndex()
 	if err != nil {
 		log.Fatalf("failed to create index service: %v", err)
 	}
-	service.Index("id1", &data{Name: "foo"})
-	service.Index("id2", &data{Name: "bar"})
+	index1.Index("id1", &data{Name: "foo"})
+	index1.Index("id2", &data{Name: "bar"})
 	log.Println("created index")
 
 	server := grpc.NewServer()
-	pb_logging.RegisterIndexServiceServer(server, service)
+
+	// Our index happens to implement the Mixer service, register it.
+	pb_logging.RegisterMixerServer(server, index1)
 
 	nextAppenderId := 0
 	appender, err := appender.New(fmt.Sprintf("appender%d", nextAppenderId), memoryStorage, maxEntriesPerChunk)

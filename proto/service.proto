@@ -41,7 +41,6 @@ message SearchResponse {
   bytes bleve_response_bytes = 1;
 }
 
-// TODO(dino): Rename this to Query or Mixer.
-service IndexService {
+service Mixer {
   rpc Search (SearchRequest) returns (SearchResponse);
 }
