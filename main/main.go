@@ -23,12 +23,9 @@ type data struct {
 }
 
 func main() {
-	diskStorage, err := storage.NewTempDiskStorage()
-	if err != nil {
-		log.Fatalf("unable to create storage: %v", err)
-	}
+	memoryStorage := storage.NewInMemoryStorage()
 
-	err = diskStorage.Write("fileid", []byte("hello"))
+	err := memoryStorage.Write("fileid", []byte("hello"))
 	if err != nil {
 		log.Fatalf("unable to write to storage: %v", err)
 	}
@@ -44,7 +41,9 @@ func main() {
 	server := grpc.NewServer()
 	pb_logging.RegisterIndexServiceServer(server, service)
 
-	appender, err := appender.New(diskStorage, maxEntriesPerChunk)
+	nextAppenderId := 0
+	appender, err := appender.New(fmt.Sprintf("appender%d", nextAppenderId), memoryStorage, maxEntriesPerChunk)
+	nextAppenderId++
 	if err != nil {
 		log.Fatalf("failed to create appender: %v", err)
 	}

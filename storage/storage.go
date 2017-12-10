@@ -25,7 +25,7 @@ type Storage interface {
 func NewTempDiskStorage() (Storage, error) {
 	path, err := ioutil.TempDir("", tempDirPrefix)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create temp dir")
+		return nil, fmt.Errorf("unable to create temp dir: %v")
 	}
 	return NewDiskStorage(path), nil
 }
@@ -50,4 +50,27 @@ func (s *diskStorage) Write(id string, contents []byte) error {
 
 func (s *diskStorage) filename(id string) string {
 	return path.Join(s.path, id)
+}
+
+// NewInMemoryStorage returns a storage backed by an in-memory map.
+func NewInMemoryStorage() Storage {
+	return &inMemoryStorage{data: map[string][]byte{}}
+}
+
+type inMemoryStorage struct {
+	data map[string][]byte
+}
+
+func (s *inMemoryStorage) Read(id string) ([]byte, error) {
+	result := s.data[id]
+	if result == nil {
+		return nil, fmt.Errorf("value %s does not exist", id)
+	} else {
+		return result, nil
+	}
+}
+
+func (s *inMemoryStorage) Write(id string, contents []byte) error {
+	s.data[id] = contents
+	return nil
 }
