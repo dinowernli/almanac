@@ -15,16 +15,32 @@ import (
 	"google.golang.org/grpc"
 )
 
+// searchClient represents the interface needed to perform remote searches.
+type searchClient interface {
+	Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error)
+}
+
+// TODO(dino): Finish plumbing this, allowing the remote index to operate on any
+// remote service which supports queries.
+type appenderSearchClient struct {
+}
+
+func (c *appenderSearchClient) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
+	return nil, fmt.Errorf("search not implemented")
+}
+
 // remoteIndex is an implementation of Bleve's Index interface which delegates
 // calls to a remote IndexService.
 type remoteIndex struct {
 	address string
+	client  searchClient
 }
 
 func NewRemoteIndex(address string) *remoteIndex {
-	return &remoteIndex{address: address}
+	return &remoteIndex{address: address, client: &appenderSearchClient{}}
 }
 
+// TODO(dino): move the body of this into the with-context version below.
 func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
 	connection, err := grpc.Dial("localhost:12345", grpc.WithInsecure())
 	if err != nil {
