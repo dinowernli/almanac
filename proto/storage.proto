@@ -9,6 +9,9 @@ message LogEntry {
 
   // An epoch timestamp in milliseconds associated with this entry.
   int64 timestamp_ms = 2;
+
+  // A globally unique id for this log entry.
+  string id = 3;
 }
 
 message BleveIndex {
