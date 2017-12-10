@@ -13,7 +13,11 @@ message AppendResponse {
 }
 
 service Appender {
+  // Appends an entry to an open chunk on this appender.
   rpc Append (AppendRequest) returns (AppendResponse);
+
+  // Executes a search on any open chunk(s) on this appender.
+  rpc Search (SearchRequest) returns (SearchResponse);
 }
 
 // A request to ingest a single log entry into the system.
@@ -37,7 +41,6 @@ message SearchResponse {
   bytes bleve_response_bytes = 1;
 }
 
-// TODO(dino): Rename this to Query or Mixer.
-service IndexService {
+service Mixer {
   rpc Search (SearchRequest) returns (SearchResponse);
 }

@@ -12,7 +12,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Index implements a grpc service representing a remote index.
+// Index wraps a bleve index and presents an interface in terms of the almanac
+// protos. Instances of Index can be serialized to protos and deserialized from
+// protos.
 type Index struct {
 	index bleve.Index
 	path  string

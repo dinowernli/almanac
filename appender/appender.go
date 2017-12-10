@@ -16,6 +16,10 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// appender keeps track of a single open chunk under construction at a time and
+// periodically decides that the open chunk is complete, at which point the
+// appender writes the chunk to storage. The appender also knows how to answer
+// search requests for the currently open chunk.
 type appender struct {
 	entries     []*pb_almanac.LogEntry
 	index       *index.Index
@@ -46,6 +50,17 @@ func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*a
 	}, nil
 }
 
+func (a *appender) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
+	a.appendMutex.Lock()
+	defer a.appendMutex.Unlock()
+
+	response, err := a.index.Search(ctx, request)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "unable to search: %v", err)
+	}
+	return response, nil
+}
+
 func (a *appender) Append(ctx context.Context, request *pb_almanac.AppendRequest) (*pb_almanac.AppendResponse, error) {
 	// Perform some validation of the request.
 	logEntry := request.GetEntry()
@@ -70,7 +85,7 @@ func (a *appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 
 	err = a.index.Index(entryId, rawEntry)
 	if err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "unable to index raw jsen entry: %v", err)
+		return nil, grpc.Errorf(codes.Internal, "unable to index raw json entry: %v", err)
 	}
 
 	a.entries = append(a.entries, request.Entry)
@@ -79,8 +94,16 @@ func (a *appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 	if len(a.entries) >= a.maxEntriesPerChunk {
 		err := a.storeChunk()
 		if err != nil {
-			return nil, grpc.Errorf(codes.InvalidArgument, "unable to store chunk: %v", err)
+			return nil, grpc.Errorf(codes.Internal, "unable to store chunk: %v", err)
 		}
+
+		index, err := index.NewIndex()
+		if err != nil {
+			// TODO(dino): If this happens, stop responding to requests.
+			return nil, grpc.Errorf(codes.Internal, "unable to create new index: %v", err)
+		}
+		a.index = index
+		a.entries = []*pb_almanac.LogEntry{}
 	}
 
 	return &pb_almanac.AppendResponse{}, nil
