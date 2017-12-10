@@ -14,13 +14,15 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	maxEntriesPerChunk = 4
+)
+
 type data struct {
 	Name string
 }
 
 func main() {
-	appender.New()
-
 	diskStorage, err := storage.NewTempDiskStorage()
 	if err != nil {
 		log.Fatalf("unable to create storage: %v", err)
@@ -41,6 +43,10 @@ func main() {
 
 	server := grpc.NewServer()
 	pb_logging.RegisterIndexServiceServer(server, service)
+
+	appender := appender.New(diskStorage, maxEntriesPerChunk)
+	pb_logging.RegisterAppenderServer(server, appender)
+
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", 12345))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
