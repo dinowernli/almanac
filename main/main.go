@@ -44,7 +44,11 @@ func main() {
 	server := grpc.NewServer()
 	pb_logging.RegisterIndexServiceServer(server, service)
 
-	appender := appender.New(diskStorage, maxEntriesPerChunk)
+	appender, err := appender.New(diskStorage, maxEntriesPerChunk)
+	if err != nil {
+		log.Fatalf("failed to create appender: %v", err)
+	}
+
 	pb_logging.RegisterAppenderServer(server, appender)
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", 12345))
