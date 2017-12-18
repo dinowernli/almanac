@@ -62,10 +62,8 @@ func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 // the system.
 func (m *mixer) loadAppenders() ([]*index.Index, error) {
 	result := []*index.Index{}
-	for _, _ = range m.discovery.ListAppenders() {
-		// TODO(dino): Turn index.Index into an interface and have remoteIndex
-		// implement that.
-		// result = append(result, index.NewRemoteIndex(a))
+	for _, a := range m.discovery.ListAppenders() {
+		result = append(result, index.NewRemoteIndex(a))
 	}
 	return result, nil
 }

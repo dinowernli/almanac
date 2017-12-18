@@ -26,7 +26,12 @@ type remoteIndex struct {
 	client searchClient
 }
 
-func NewRemoteIndex(client searchClient) *remoteIndex {
+func NewRemoteIndex(client searchClient) *Index {
+	// TODO(dino): This is not great, remove the empty path stuff once Index becomes an interface.
+	return &Index{index: &remoteIndex{client: client}, path: ""}
+}
+
+func NewRemoteBleveIndex(client searchClient) bleve.Index {
 	return &remoteIndex{client: client}
 }
 
