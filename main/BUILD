@@ -24,6 +24,12 @@ go_test(
     size = "small",
     srcs = glob(["*_test.go"]),
     deps = [
+        "//appender:go_default_library",
+        "//discovery:go_default_library",
+        "//index:go_default_library",
+        "//mixer:go_default_library",
+        "//proto:go_default_library",
+        "//storage:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
