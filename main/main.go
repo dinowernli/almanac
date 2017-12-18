@@ -74,7 +74,7 @@ func main() {
 	}
 
 	mixerClient := pb_logging.NewMixerClient(conn)
-	indexAlias := bleve.NewIndexAlias(index.NewRemoteIndex(mixerClient))
+	indexAlias := bleve.NewIndexAlias(index.NewRemoteBleveIndex(mixerClient))
 	bleveQuery := bleve.NewMatchQuery("foo")
 	bleveSearch := bleve.NewSearchRequest(bleveQuery)
 	bleveResult, err := indexAlias.Search(bleveSearch)
