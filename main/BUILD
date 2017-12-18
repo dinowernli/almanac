@@ -26,6 +26,7 @@ go_test(
     deps = [
         "//appender:go_default_library",
         "//discovery:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
         "//index:go_default_library",
         "//mixer:go_default_library",
         "//proto:go_default_library",
