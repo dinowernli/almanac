@@ -28,6 +28,7 @@ func openIndex(dir string) (*Index, error) {
 	return &Index{index: index, path: dir}, nil
 }
 
+// NewIndex returns an instance of index backed by an temporary location on disk.
 func NewIndex() (*Index, error) {
 	dir, err := ioutil.TempDir("", "index.bleve")
 	if err != nil {
@@ -48,13 +49,24 @@ func (s *Index) Index(id string, data interface{}) error {
 }
 
 func (s *Index) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
+	return Search([]*Index{s}, ctx, request)
+}
+
+// Search executes the supplied search request on the supplied bleve index.
+func Search(indexes []*Index, ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
 	bleveSearchRequest := &bleve.SearchRequest{}
 	err := json.Unmarshal(request.BleveRequestBytes, bleveSearchRequest)
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshal request: %v", err)
 	}
 
-	bleveResult, err := s.index.Search(bleveSearchRequest)
+	bleveIndexes := []bleve.Index{}
+	for _, idx := range indexes {
+		bleveIndexes = append(bleveIndexes, idx.index)
+	}
+	indexAlias := bleve.NewIndexAlias(bleveIndexes...)
+
+	bleveResult, err := indexAlias.Search(bleveSearchRequest)
 	if err != nil {
 		log.Fatalf("failed to search: %v", err)
 	}

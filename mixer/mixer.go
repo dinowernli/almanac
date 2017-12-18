@@ -8,7 +8,6 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
-	"github.com/blevesearch/bleve"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -30,7 +29,7 @@ func New(storage storage.Storage, discovery *discovery.Discovery) *mixer {
 }
 
 func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
-	indexes := []bleve.Index{}
+	indexes := []*index.Index{}
 
 	// Load all relevant chunks as indexes.
 	chunks, err := m.loadChunks(request)
@@ -50,29 +49,36 @@ func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 		indexes = append(indexes, appenderIndex)
 	}
 
-	// TODO(dino): Create an aliasindex for all the indexes and execute a search.
+	// Perform the combined search.
+	result, err := index.Search(indexes, ctx, request)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "unable to search indexes: %v", err)
+	}
 
-	return nil, grpc.Errorf(codes.Unimplemented, "search not implemented")
+	return result, nil
 }
 
-func (m *mixer) loadAppenders() ([]bleve.Index, error) {
-	result := []bleve.Index{}
-	for _, a := range m.discovery.ListAppenders() {
-		result = append(result, index.NewRemoteIndex(a))
+// loadAppenders returns bleve index implementations backed by all appenders in
+// the system.
+func (m *mixer) loadAppenders() ([]*index.Index, error) {
+	result := []*index.Index{}
+	for _, _ = range m.discovery.ListAppenders() {
+		// TODO(dino): Turn index.Index into an interface and have remoteIndex
+		// implement that.
+		// result = append(result, index.NewRemoteIndex(a))
 	}
 	return result, nil
 }
 
 // loadChunks returns all stored chunks which need to be searched for this request.
-func (m *mixer) loadChunks(request *pb_almanac.SearchRequest) ([]bleve.Index, error) {
-	// TODO(dino): Add more information to the chunk names, making it easier to only
-	// load subsets of all chunks. For now, return them all.
+func (m *mixer) loadChunks(request *pb_almanac.SearchRequest) ([]*index.Index, error) {
+	// TODO(dino): Stop listing all chunks by using some kind of scan.
 	chunkKeys, err := m.storage.List(chunkPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list chunk keys: %v", err)
 	}
 
-	result := []*pb_almanac.Chunk{}
+	results := []*index.Index{}
 	for _, key := range chunkKeys {
 		bytes, err := m.storage.Read(key)
 		if err != nil {
@@ -84,9 +90,13 @@ func (m *mixer) loadChunks(request *pb_almanac.SearchRequest) ([]bleve.Index, er
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal chunk %s: %v", key, err)
 		}
-		result = append(result, chunk)
+
+		idx, err := index.Deserialize(chunk.Index)
+		if err != nil {
+			return nil, fmt.Errorf("failed to deserialize index from chunk %s: %v", key, err)
+		}
+		results = append(results, idx)
 	}
 
-	// TODO(dino): tranform chunks into indexes.
-	return nil, nil
+	return results, nil
 }
