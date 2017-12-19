@@ -106,6 +106,7 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 		a.entries = []*pb_almanac.LogEntry{}
 	}
 
+	log.Printf("successfully appended entry: %s", request.Entry.Id)
 	return &pb_almanac.AppendResponse{}, nil
 }
 
