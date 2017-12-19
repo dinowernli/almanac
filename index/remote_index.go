@@ -31,10 +31,6 @@ func NewRemoteIndex(client searchClient) *Index {
 	return &Index{index: &remoteIndex{client: client}, path: ""}
 }
 
-func NewRemoteBleveIndex(client searchClient) bleve.Index {
-	return &remoteIndex{client: client}
-}
-
 // TODO(dino): move the body of this into the with-context version below.
 func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
 	bleveRequestBytes, err := json.Marshal(req)
