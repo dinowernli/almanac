@@ -31,15 +31,14 @@ func NewRemoteIndex(client searchClient) *Index {
 	return &Index{index: &remoteIndex{client: client}, path: ""}
 }
 
-// TODO(dino): move the body of this into the with-context version below.
-func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
+func (i *remoteIndex) SearchInContext(ctx context.Context, req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
 	bleveRequestBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marsal request: %v", err)
 	}
 
 	remoteRequest := &pb_logging.SearchRequest{BleveRequestBytes: bleveRequestBytes}
-	response, err := i.client.Search(context.Background(), remoteRequest)
+	response, err := i.client.Search(ctx, remoteRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make rpc: %v", err)
 	}
@@ -52,11 +51,11 @@ func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, 
 	return result, nil
 }
 
-func (i *remoteIndex) SearchInContext(ctx context.Context, req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
-	return i.Search(req)
-}
-
 // Methods down here just make sure we implement the Index interface.
+
+func (i *remoteIndex) Search(req *bleve.SearchRequest) (sr *bleve.SearchResult, err error) {
+	return nil, fmt.Errorf("Search without context not implemented")
+}
 
 func (i *remoteIndex) Advanced() (index.Index, store.KVStore, error) {
 	return nil, nil, fmt.Errorf("not implemented")
