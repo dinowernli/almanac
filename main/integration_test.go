@@ -92,6 +92,34 @@ func TestSearchesAppenders(t *testing.T) {
 	assert.Equal(t, 2, len(bleveResponse.Hits))
 }
 
+func TestDeduplicatedEntries(t *testing.T) {
+	f, err := createFixture()
+	assert.NoError(t, err)
+
+	// Add an entry containing "foo" to multiple appenders.
+	append1, err := appendRequest("entry1", "foo", 123)
+	assert.NoError(t, err)
+
+	_, err = f.appenders[0].Append(context.Background(), append1)
+	assert.NoError(t, err)
+
+	_, err = f.appenders[1].Append(context.Background(), append1)
+	assert.NoError(t, err)
+
+	// Now perform some searches.
+	request, err := searchRequest("foo")
+	assert.NoError(t, err)
+
+	response, err := f.mixer.Search(context.Background(), request)
+	assert.NoError(t, err)
+
+	_, err = unpackResponse(response)
+	assert.NoError(t, err)
+
+	// TODO(dino): Teach bleve how to dedupe docs based on their id.
+	// assert.Equal(t, 1, len(bleveResponse.Hits))
+}
+
 func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {
 	fooJson, err := json.Marshal(&entry{message})
 	if err != nil {
