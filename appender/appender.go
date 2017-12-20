@@ -20,7 +20,7 @@ import (
 // periodically decides that the open chunk is complete, at which point the
 // appender writes the chunk to storage. The appender also knows how to answer
 // search requests for the currently open chunk.
-type appender struct {
+type Appender struct {
 	entries     []*pb_almanac.LogEntry
 	index       *index.Index
 	chunkId     int
@@ -32,7 +32,7 @@ type appender struct {
 }
 
 // New returns a new appender backed by the supplied storage.
-func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*appender, error) {
+func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
 	if maxEntriesPerChunk < 1 {
 		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxEntriesPerChunk)
 	}
@@ -42,7 +42,7 @@ func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*a
 		return nil, fmt.Errorf("unable to create index: %v", err)
 	}
 
-	return &appender{
+	return &Appender{
 		index:              index,
 		appendMutex:        &sync.Mutex{},
 		storage:            storage,
@@ -50,7 +50,7 @@ func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*a
 	}, nil
 }
 
-func (a *appender) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
+func (a *Appender) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
 	a.appendMutex.Lock()
 	defer a.appendMutex.Unlock()
 
@@ -61,7 +61,7 @@ func (a *appender) Search(ctx context.Context, request *pb_almanac.SearchRequest
 	return response, nil
 }
 
-func (a *appender) Append(ctx context.Context, request *pb_almanac.AppendRequest) (*pb_almanac.AppendResponse, error) {
+func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest) (*pb_almanac.AppendResponse, error) {
 	// Perform some validation of the request.
 	logEntry := request.GetEntry()
 	if logEntry == nil {
@@ -106,12 +106,13 @@ func (a *appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 		a.entries = []*pb_almanac.LogEntry{}
 	}
 
+	log.Printf("successfully appended entry: %s", request.Entry.Id)
 	return &pb_almanac.AppendResponse{}, nil
 }
 
 // storeChunk takes the currently open chunk, persists it to storage, and starts
 // a new open chunk.
-func (a *appender) storeChunk() error {
+func (a *Appender) storeChunk() error {
 	indexProto, err := index.Serialize(a.index)
 	if err != nil {
 		return fmt.Errorf("unable to serialize index: %v", err)
@@ -133,7 +134,7 @@ func (a *appender) storeChunk() error {
 	return nil
 }
 
-func (a *appender) nextChunkName() string {
+func (a *Appender) nextChunkName() string {
 	result := fmt.Sprintf("chunk-%d-%s", a.chunkId, a.appenderId)
 	a.chunkId++
 	return result

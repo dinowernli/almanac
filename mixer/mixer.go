@@ -18,17 +18,17 @@ const (
 	chunkPrefix = "chunk-"
 )
 
-type mixer struct {
+type Mixer struct {
 	storage   storage.Storage
 	discovery *discovery.Discovery
 }
 
 // New returns a new mixer backed by the supplied storage.
-func New(storage storage.Storage, discovery *discovery.Discovery) *mixer {
-	return &mixer{storage: storage, discovery: discovery}
+func New(storage storage.Storage, discovery *discovery.Discovery) *Mixer {
+	return &Mixer{storage: storage, discovery: discovery}
 }
 
-func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
+func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
 	indexes := []*index.Index{}
 
 	// Load all relevant chunks as indexes.
@@ -60,7 +60,7 @@ func (m *mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 
 // loadAppenders returns bleve index implementations backed by all appenders in
 // the system.
-func (m *mixer) loadAppenders() ([]*index.Index, error) {
+func (m *Mixer) loadAppenders() ([]*index.Index, error) {
 	result := []*index.Index{}
 	for _, a := range m.discovery.ListAppenders() {
 		result = append(result, index.NewRemoteIndex(a))
@@ -69,7 +69,7 @@ func (m *mixer) loadAppenders() ([]*index.Index, error) {
 }
 
 // loadChunks returns all stored chunks which need to be searched for this request.
-func (m *mixer) loadChunks(request *pb_almanac.SearchRequest) ([]*index.Index, error) {
+func (m *Mixer) loadChunks(request *pb_almanac.SearchRequest) ([]*index.Index, error) {
 	// TODO(dino): Stop listing all chunks by using some kind of scan.
 	chunkKeys, err := m.storage.List(chunkPrefix)
 	if err != nil {
