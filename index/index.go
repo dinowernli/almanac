@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
 	pb_logging "dinowernli.me/almanac/proto"
 
@@ -20,6 +21,9 @@ type Index struct {
 	path  string
 }
 
+// openIndex returns an index backed by the contents on disk at the specified
+// path. The caller responsible for eventually calling Close() on the returned
+// instance to release disk resources.
 func openIndex(dir string) (*Index, error) {
 	index, err := bleve.Open(dir)
 	if err != nil {
@@ -29,6 +33,7 @@ func openIndex(dir string) (*Index, error) {
 }
 
 // NewIndex returns an instance of index backed by an temporary location on disk.
+// The caller is responsible for eventually calling Close() on the returned index.
 func NewIndex() (*Index, error) {
 	dir, err := ioutil.TempDir("", "index.bleve")
 	if err != nil {
@@ -43,12 +48,18 @@ func NewIndex() (*Index, error) {
 	return &Index{index: index, path: dir}, nil
 }
 
-func (s *Index) Index(id string, data interface{}) error {
-	return s.index.Index(id, data)
+func (i *Index) Index(id string, data interface{}) error {
+	return i.index.Index(id, data)
 }
 
-func (s *Index) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
-	return Search([]*Index{s}, ctx, request)
+func (i *Index) Search(ctx context.Context, request *pb_logging.SearchRequest) (*pb_logging.SearchResponse, error) {
+	return Search([]*Index{i}, ctx, request)
+}
+
+// Close releases any resources held by this instance. No other methods must
+// be called after this.
+func (i *Index) Close() error {
+	return os.RemoveAll(i.path)
 }
 
 // Search executes the supplied search request on the supplied bleve index.

@@ -8,7 +8,6 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -19,12 +18,12 @@ const (
 )
 
 type Mixer struct {
-	storage   storage.Storage
+	storage   *storage.Storage
 	discovery *discovery.Discovery
 }
 
 // New returns a new mixer backed by the supplied storage.
-func New(storage storage.Storage, discovery *discovery.Discovery) *Mixer {
+func New(storage *storage.Storage, discovery *discovery.Discovery) *Mixer {
 	return &Mixer{storage: storage, discovery: discovery}
 }
 
@@ -36,8 +35,14 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, "unable to load chunks: %v", err)
 	}
-	for _, chunkIndex := range chunks {
-		indexes = append(indexes, chunkIndex)
+	defer func() {
+		for _, chunk := range chunks {
+			chunk.Close()
+		}
+	}()
+
+	for _, chunk := range chunks {
+		indexes = append(indexes, chunk.Index())
 	}
 
 	// Gather all relevant appenders.
@@ -69,32 +74,19 @@ func (m *Mixer) loadAppenders() ([]*index.Index, error) {
 }
 
 // loadChunks returns all stored chunks which need to be searched for this request.
-func (m *Mixer) loadChunks(request *pb_almanac.SearchRequest) ([]*index.Index, error) {
-	// TODO(dino): Stop listing all chunks by using some kind of scan.
-	chunkKeys, err := m.storage.List(chunkPrefix)
+func (m *Mixer) loadChunks(request *pb_almanac.SearchRequest) ([]*storage.Chunk, error) {
+	chunkIds, err := m.storage.ListChunks(request.StartMs, request.EndMs)
 	if err != nil {
-		return nil, fmt.Errorf("unable to list chunk keys: %v", err)
+		return nil, fmt.Errorf("unable to list chunks: %v", err)
 	}
 
-	results := []*index.Index{}
-	for _, key := range chunkKeys {
-		bytes, err := m.storage.Read(key)
+	results := []*storage.Chunk{}
+	for _, chunkId := range chunkIds {
+		chunk, err := m.storage.LoadChunk(chunkId)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read key %s: %v", key, err)
+			return nil, fmt.Errorf("unable to load chunk %s: %v", chunkId, err)
 		}
-
-		chunk := &pb_almanac.Chunk{}
-		err = proto.Unmarshal(bytes, chunk)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal chunk %s: %v", key, err)
-		}
-
-		idx, err := index.Deserialize(chunk.Index)
-		if err != nil {
-			return nil, fmt.Errorf("failed to deserialize index from chunk %s: %v", key, err)
-		}
-		results = append(results, idx)
+		results = append(results, chunk)
 	}
-
 	return results, nil
 }

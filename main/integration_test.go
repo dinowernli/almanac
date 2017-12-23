@@ -30,7 +30,7 @@ var (
 // fixture holds a test setup ready to use for testing.
 type fixture struct {
 	appenders []*appender.Appender
-	storage   st.Storage
+	storage   *st.Storage
 	discovery *dc.Discovery
 	mixer     *mx.Mixer
 }

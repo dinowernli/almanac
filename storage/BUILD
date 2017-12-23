@@ -4,4 +4,9 @@ go_library(
     name = "go_default_library",
     srcs = glob(["*.go"]),
     visibility = ["//visibility:public"],
+    deps = [
+        "//index:go_default_library",
+        "//proto:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+    ],
 )

@@ -35,6 +35,9 @@ service Ingester {
 
 message SearchRequest {
   bytes bleve_request_bytes = 1;
+
+  int64 start_ms = 2;
+  int64 end_ms = 3;
 }
 
 message SearchResponse {

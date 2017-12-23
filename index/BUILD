@@ -9,7 +9,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//proto:go_default_library",
-        "//storage:go_default_library",
         "@com_github_blevesearch_bleve//:go_default_library",
         "@com_github_blevesearch_bleve//document:go_default_library",
         "@com_github_blevesearch_bleve//index:go_default_library",
