@@ -34,7 +34,6 @@ func NewIndex() (*Index, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tempfile: %v", err)
 	}
-	log.Printf("created directory: %s", dir)
 
 	mapping := bleve.NewIndexMapping()
 	index, err := bleve.New(dir, mapping)

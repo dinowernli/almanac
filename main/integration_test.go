@@ -92,6 +92,32 @@ func TestSearchesAppenders(t *testing.T) {
 	assert.Equal(t, 2, len(bleveResponse.Hits))
 }
 
+func TestRoundTripThroughStorage(t *testing.T) {
+	f, err := createFixture()
+	assert.NoError(t, err)
+
+	// Add multiple chunks worth of entries.
+	numEntries := 10 * entriesPerChunk
+	for i := 0; i < numEntries; i++ {
+		request, err := appendRequest(fmt.Sprintf("id-%d", i), "foo", 123)
+		assert.NoError(t, err)
+
+		_, err = f.appenders[0].Append(context.Background(), request)
+		assert.NoError(t, err)
+	}
+
+	// Make sure all entries turn up.
+	request, err := searchRequest("foo")
+	assert.NoError(t, err)
+
+	response, err := f.mixer.Search(context.Background(), request)
+	assert.NoError(t, err)
+
+	bleveResponse, err := unpackResponse(response)
+	assert.NoError(t, err)
+	assert.Equal(t, numEntries, len(bleveResponse.Hits))
+}
+
 func TestDeduplicatedEntries(t *testing.T) {
 	f, err := createFixture()
 	assert.NoError(t, err)

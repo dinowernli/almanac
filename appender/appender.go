@@ -47,6 +47,7 @@ func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*A
 		appendMutex:        &sync.Mutex{},
 		storage:            storage,
 		maxEntriesPerChunk: maxEntriesPerChunk,
+		appenderId:         appenderId,
 	}, nil
 }
 
@@ -106,7 +107,6 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 		a.entries = []*pb_almanac.LogEntry{}
 	}
 
-	log.Printf("successfully appended entry: %s", request.Entry.Id)
 	return &pb_almanac.AppendResponse{}, nil
 }
 
@@ -129,7 +129,7 @@ func (a *Appender) storeChunk() error {
 	}
 	chunkName := a.nextChunkName()
 	a.storage.Write(chunkName, bytes)
-	log.Printf("wrote chunk: %s", chunkName)
+	log.Printf("wrote chunk [%s] with %d entries", chunkName, len(chunkProto.Entries))
 
 	return nil
 }
