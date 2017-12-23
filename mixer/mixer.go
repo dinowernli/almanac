@@ -13,10 +13,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-const (
-	chunkPrefix = "chunk-"
-)
-
 type Mixer struct {
 	storage   *storage.Storage
 	discovery *discovery.Discovery
