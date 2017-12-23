@@ -96,8 +96,9 @@ func TestRoundTripThroughStorage(t *testing.T) {
 	f, err := createFixture()
 	assert.NoError(t, err)
 
-	// Add multiple chunks worth of entries.
-	numEntries := 10 * entriesPerChunk
+	// Add multiple chunks worth of entries, try to make sure we have an
+	// open chunk as well.
+	numEntries := 10*entriesPerChunk + 1
 	for i := 0; i < numEntries; i++ {
 		request, err := appendRequest(fmt.Sprintf("id-%d", i), "foo", 123)
 		assert.NoError(t, err)
@@ -162,7 +163,11 @@ func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.Ap
 }
 
 func searchRequest(query string) (*pb_almanac.SearchRequest, error) {
-	bleveRequest := bleve.NewSearchRequest(bleve.NewMatchQuery(query))
+	bleveRequest := bleve.NewSearchRequestOptions(
+		bleve.NewMatchQuery(query),
+		200, /* size */
+		0,   /* from */
+		false /* explain */)
 	bleveBytes, err := json.Marshal(bleveRequest)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal bleve request: %v", err)
