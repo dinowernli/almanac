@@ -63,11 +63,6 @@ func (c *Chunk) Close() error {
 	return c.index.Close()
 }
 
-func (c *Chunk) Index() *index.Index {
-	// TODO(dino): Remove this and migrate callers onto the Search() method.
-	return c.index
-}
-
 func (c *Chunk) fetchEntry(id string) (*pb_almanac.LogEntry, error) {
 	result, ok := c.entries[id]
 	if !ok {
