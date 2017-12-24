@@ -9,5 +9,6 @@ go_library(
         "//proto:go_default_library",
         "@com_github_blevesearch_bleve//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_x_net//context:go_default_library",
     ],
 )

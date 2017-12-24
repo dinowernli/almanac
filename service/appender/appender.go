@@ -9,7 +9,6 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
-	"github.com/blevesearch/bleve"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -55,23 +54,16 @@ func (a *Appender) Search(ctx context.Context, request *pb_almanac.SearchRequest
 	a.appendMutex.Lock()
 	defer a.appendMutex.Unlock()
 
-	// TODO(dino): Dedupe this request -> bleverequest transition by using a common helper.
-	bleveRequest := bleve.NewSearchRequestOptions(
-		bleve.NewMatchQuery(request.Query),
-		int(request.Num),
-		0, /* from */
-		false /* explain */)
-
-	result, err := a.index.Bleve().Search(bleveRequest)
+	ids, err := a.index.Search(ctx, request.Query, request.Num)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to search bleve index: %v", err)
+		return nil, fmt.Errorf("unable to search index: %v", err)
 	}
 
 	entries := []*pb_almanac.LogEntry{}
-	for _, hit := range result.Hits {
-		entry, ok := a.entries[hit.ID]
+	for _, id := range ids {
+		entry, ok := a.entries[id]
 		if !ok {
-			return nil, grpc.Errorf(codes.Internal, "could not locate hit %s", hit.ID)
+			return nil, fmt.Errorf("could not locate hit %s", id)
 		}
 		entries = append(entries, entry)
 	}
