@@ -35,10 +35,16 @@ service Ingester {
 
 message SearchRequest {
   bytes bleve_request_bytes = 1;
+
+  int64 start_ms = 2;
+  int64 end_ms = 3;
+  string query = 4;
+  int32 num = 5;
 }
 
 message SearchResponse {
   bytes bleve_response_bytes = 1;
+  repeated LogEntry entries = 2;
 }
 
 service Mixer {

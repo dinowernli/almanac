@@ -12,7 +12,6 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	st "dinowernli.me/almanac/storage"
 
-	"github.com/blevesearch/bleve"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -30,7 +29,7 @@ var (
 // fixture holds a test setup ready to use for testing.
 type fixture struct {
 	appenders []*appender.Appender
-	storage   st.Storage
+	storage   *st.Storage
 	discovery *dc.Discovery
 	mixer     *mx.Mixer
 }
@@ -49,10 +48,7 @@ func TestNoEntries(t *testing.T) {
 
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
-
-	bleveResponse, err := unpackResponse(response)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(bleveResponse.Hits))
+	assert.Equal(t, 0, len(response.Entries))
 }
 
 func TestSearchesAppenders(t *testing.T) {
@@ -86,10 +82,31 @@ func TestSearchesAppenders(t *testing.T) {
 
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
+	assert.Equal(t, 2, len(response.Entries))
+}
 
-	bleveResponse, err := unpackResponse(response)
+func TestRoundTripThroughStorage(t *testing.T) {
+	f, err := createFixture()
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(bleveResponse.Hits))
+
+	// Add multiple chunks worth of entries, try to make sure we have an
+	// open chunk as well.
+	numEntries := 10*entriesPerChunk + 1
+	for i := 0; i < numEntries; i++ {
+		request, err := appendRequest(fmt.Sprintf("id-%d", i), "foo", 123)
+		assert.NoError(t, err)
+
+		_, err = f.appenders[0].Append(context.Background(), request)
+		assert.NoError(t, err)
+	}
+
+	// Make sure all entries turn up.
+	request, err := searchRequest("foo")
+	assert.NoError(t, err)
+
+	response, err := f.mixer.Search(context.Background(), request)
+	assert.NoError(t, err)
+	assert.Equal(t, numEntries, len(response.Entries))
 }
 
 func TestDeduplicatedEntries(t *testing.T) {
@@ -110,14 +127,11 @@ func TestDeduplicatedEntries(t *testing.T) {
 	request, err := searchRequest("foo")
 	assert.NoError(t, err)
 
-	response, err := f.mixer.Search(context.Background(), request)
-	assert.NoError(t, err)
-
-	_, err = unpackResponse(response)
+	_, err = f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
 
 	// TODO(dino): Teach bleve how to dedupe docs based on their id.
-	// assert.Equal(t, 1, len(bleveResponse.Hits))
+	// assert.Equal(t, 1, len(response.Entries))
 }
 
 func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {
@@ -136,21 +150,11 @@ func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.Ap
 }
 
 func searchRequest(query string) (*pb_almanac.SearchRequest, error) {
-	bleveRequest := bleve.NewSearchRequest(bleve.NewMatchQuery(query))
-	bleveBytes, err := json.Marshal(bleveRequest)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal bleve request: %v", err)
-	}
-	return &pb_almanac.SearchRequest{BleveRequestBytes: bleveBytes}, nil
-}
-
-func unpackResponse(response *pb_almanac.SearchResponse) (*bleve.SearchResult, error) {
-	result := &bleve.SearchResult{}
-	err := json.Unmarshal(response.BleveResponseBytes, result)
-	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal bleve response: %v", err)
-	}
-	return result, nil
+	// TODO(dino): this doesn't need to return an error (and could be inlined).
+	return &pb_almanac.SearchRequest{
+		Num:   200,
+		Query: query,
+	}, nil
 }
 
 // createFixture sets up a test fixture, including all services required to run the system.

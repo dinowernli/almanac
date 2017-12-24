@@ -4,97 +4,98 @@ import (
 	"fmt"
 
 	"dinowernli.me/almanac/discovery"
-	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
-const (
-	chunkPrefix = "chunk-"
-)
-
 type Mixer struct {
-	storage   storage.Storage
+	storage   *storage.Storage
 	discovery *discovery.Discovery
 }
 
 // New returns a new mixer backed by the supplied storage.
-func New(storage storage.Storage, discovery *discovery.Discovery) *Mixer {
+func New(storage *storage.Storage, discovery *discovery.Discovery) *Mixer {
 	return &Mixer{storage: storage, discovery: discovery}
 }
 
+func (m *Mixer) searchChunk(chunkId string, query string, num int32, resultChan chan *partialResult) {
+	result := &partialResult{}
+	chunk, err := m.storage.LoadChunk(chunkId)
+	if err != nil {
+		result.err = fmt.Errorf("unable to load chunk %s: %v\n", chunkId, err)
+		resultChan <- result
+	}
+	result.chunk = chunk
+
+	entries, err := chunk.Search(query, num)
+	if err != nil {
+		result.err = fmt.Errorf("unable to perform search on chunk %s: %v\n", chunkId, err)
+		resultChan <- result
+	}
+
+	result.entries = entries
+	resultChan <- result
+}
+
+type partialResult struct {
+	chunk   *storage.Chunk
+	entries []*pb_almanac.LogEntry
+	err     error
+}
+
+func (m *Mixer) searchAppender(ctx context.Context, appender pb_almanac.AppenderClient, request *pb_almanac.SearchRequest, resultChan chan *partialResult) {
+	response, err := appender.Search(ctx, request)
+	if err != nil {
+		resultChan <- &partialResult{err: err}
+		return
+	}
+	resultChan <- &partialResult{entries: response.Entries}
+}
+
 func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
-	indexes := []*index.Index{}
-
-	// Load all relevant chunks as indexes.
-	chunks, err := m.loadChunks(request)
+	// Do some prep for the parallel searches.
+	appenders := m.discovery.ListAppenders()
+	chunkIds, err := m.storage.ListChunks(request.StartMs, request.EndMs)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to load chunks: %v", err)
-	}
-	for _, chunkIndex := range chunks {
-		indexes = append(indexes, chunkIndex)
+		return nil, grpc.Errorf(codes.Internal, "unable to list chunks: %v", err)
 	}
 
-	// Gather all relevant appenders.
-	appenders, err := m.loadAppenders()
-	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to load appenders: %v", err)
+	// Execute all the searches in parallel.
+	numSubRequests := len(appenders) + len(chunkIds)
+	resultChan := make(chan *partialResult, numSubRequests)
+	for _, chunkId := range chunkIds {
+		go m.searchChunk(chunkId, request.Query, request.Num, resultChan)
 	}
-	for _, appenderIndex := range appenders {
-		indexes = append(indexes, appenderIndex)
-	}
-
-	// Perform the combined search.
-	result, err := index.Search(indexes, ctx, request)
-	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to search indexes: %v", err)
+	for _, appender := range appenders {
+		go m.searchAppender(ctx, appender, request, resultChan)
 	}
 
-	return result, nil
-}
-
-// loadAppenders returns bleve index implementations backed by all appenders in
-// the system.
-func (m *Mixer) loadAppenders() ([]*index.Index, error) {
-	result := []*index.Index{}
-	for _, a := range m.discovery.ListAppenders() {
-		result = append(result, index.NewRemoteIndex(a))
-	}
-	return result, nil
-}
-
-// loadChunks returns all stored chunks which need to be searched for this request.
-func (m *Mixer) loadChunks(request *pb_almanac.SearchRequest) ([]*index.Index, error) {
-	// TODO(dino): Stop listing all chunks by using some kind of scan.
-	chunkKeys, err := m.storage.List(chunkPrefix)
-	if err != nil {
-		return nil, fmt.Errorf("unable to list chunk keys: %v", err)
-	}
-
-	results := []*index.Index{}
-	for _, key := range chunkKeys {
-		bytes, err := m.storage.Read(key)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read key %s: %v", key, err)
+	// Drain the channel and collect all the entries.
+	allEntries := []*pb_almanac.LogEntry{}
+	err = nil
+	for i := 0; i < numSubRequests; i++ {
+		result := <-resultChan
+		if result.chunk != nil {
+			result.chunk.Close()
 		}
 
-		chunk := &pb_almanac.Chunk{}
-		err = proto.Unmarshal(bytes, chunk)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal chunk %s: %v", key, err)
+		if result.err == nil {
+			for _, e := range result.entries {
+				allEntries = append(allEntries, e)
+			}
+		} else {
+			err = result.err
 		}
-
-		idx, err := index.Deserialize(chunk.Index)
-		if err != nil {
-			return nil, fmt.Errorf("failed to deserialize index from chunk %s: %v", key, err)
-		}
-		results = append(results, idx)
 	}
 
-	return results, nil
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "error executing search: %v", err)
+	}
+
+	// TODO(dino): Sort and truncate. For now, just return everything.
+	return &pb_almanac.SearchResponse{Entries: allEntries}, nil
 }

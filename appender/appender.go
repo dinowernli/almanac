@@ -3,14 +3,13 @@ package appender
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 
 	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/blevesearch/bleve"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -21,18 +20,18 @@ import (
 // appender writes the chunk to storage. The appender also knows how to answer
 // search requests for the currently open chunk.
 type Appender struct {
-	entries     []*pb_almanac.LogEntry
+	entries     map[string]*pb_almanac.LogEntry
 	index       *index.Index
 	chunkId     int
 	appendMutex *sync.Mutex
 
 	appenderId         string
-	storage            storage.Storage
+	storage            *storage.Storage
 	maxEntriesPerChunk int
 }
 
 // New returns a new appender backed by the supplied storage.
-func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
+func New(appenderId string, storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
 	if maxEntriesPerChunk < 1 {
 		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxEntriesPerChunk)
 	}
@@ -43,10 +42,12 @@ func New(appenderId string, storage storage.Storage, maxEntriesPerChunk int) (*A
 	}
 
 	return &Appender{
+		entries:            map[string]*pb_almanac.LogEntry{},
 		index:              index,
 		appendMutex:        &sync.Mutex{},
 		storage:            storage,
 		maxEntriesPerChunk: maxEntriesPerChunk,
+		appenderId:         appenderId,
 	}, nil
 }
 
@@ -54,11 +55,28 @@ func (a *Appender) Search(ctx context.Context, request *pb_almanac.SearchRequest
 	a.appendMutex.Lock()
 	defer a.appendMutex.Unlock()
 
-	response, err := a.index.Search(ctx, request)
+	// TODO(dino): Dedupe this request -> bleverequest transition by using a common helper.
+	bleveRequest := bleve.NewSearchRequestOptions(
+		bleve.NewMatchQuery(request.Query),
+		int(request.Num),
+		0, /* from */
+		false /* explain */)
+
+	result, err := a.index.Bleve().Search(bleveRequest)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to search: %v", err)
+		return nil, grpc.Errorf(codes.Internal, "unable to search bleve index: %v", err)
 	}
-	return response, nil
+
+	entries := []*pb_almanac.LogEntry{}
+	for _, hit := range result.Hits {
+		entry, ok := a.entries[hit.ID]
+		if !ok {
+			return nil, grpc.Errorf(codes.Internal, "could not locate hit %s", hit.ID)
+		}
+		entries = append(entries, entry)
+	}
+
+	return &pb_almanac.SearchResponse{Entries: entries}, nil
 }
 
 func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest) (*pb_almanac.AppendResponse, error) {
@@ -88,7 +106,7 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 		return nil, grpc.Errorf(codes.Internal, "unable to index raw json entry: %v", err)
 	}
 
-	a.entries = append(a.entries, request.Entry)
+	a.entries[entryId] = request.Entry
 
 	// If the open chunk has grown enough, close it up and start a new one.
 	if len(a.entries) >= a.maxEntriesPerChunk {
@@ -103,10 +121,9 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 			return nil, grpc.Errorf(codes.Internal, "unable to create new index: %v", err)
 		}
 		a.index = index
-		a.entries = []*pb_almanac.LogEntry{}
+		a.entries = map[string]*pb_almanac.LogEntry{}
 	}
 
-	log.Printf("successfully appended entry: %s", request.Entry.Id)
 	return &pb_almanac.AppendResponse{}, nil
 }
 
@@ -118,24 +135,26 @@ func (a *Appender) storeChunk() error {
 		return fmt.Errorf("unable to serialize index: %v", err)
 	}
 
+	entries := []*pb_almanac.LogEntry{}
+	for _, e := range a.entries {
+		entries = append(entries, e)
+	}
+
 	chunkProto := &pb_almanac.Chunk{
-		Entries: a.entries,
+		Entries: entries,
 		Index:   indexProto,
 	}
 
-	bytes, err := proto.Marshal(chunkProto)
-	if err != nil {
-		return fmt.Errorf("unable to marshal chunk proto: %v", err)
-	}
 	chunkName := a.nextChunkName()
-	a.storage.Write(chunkName, bytes)
-	log.Printf("wrote chunk: %s", chunkName)
-
+	err = a.storage.StoreChunk(chunkName, chunkProto)
+	if err != nil {
+		return fmt.Errorf("unable to store chunk %s: %v", chunkName, err)
+	}
 	return nil
 }
 
 func (a *Appender) nextChunkName() string {
-	result := fmt.Sprintf("chunk-%d-%s", a.chunkId, a.appenderId)
+	result := fmt.Sprintf("%d-%s", a.chunkId, a.appenderId)
 	a.chunkId++
 	return result
 }
