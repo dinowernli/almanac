@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// Mixer is an implementation of the mixer rpc service. It provides global
+// search functionality across the entire system.
 type Mixer struct {
 	storage   *storage.Storage
 	discovery *discovery.Discovery
@@ -74,6 +76,7 @@ func (m *Mixer) searchChunk(ctx context.Context, chunkId string, query string, n
 	if err != nil {
 		result.err = fmt.Errorf("unable to load chunk %s: %v\n", chunkId, err)
 		resultChan <- result
+		return
 	}
 	result.chunk = chunk
 
@@ -81,6 +84,7 @@ func (m *Mixer) searchChunk(ctx context.Context, chunkId string, query string, n
 	if err != nil {
 		result.err = fmt.Errorf("unable to perform search on chunk %s: %v\n", chunkId, err)
 		resultChan <- result
+		return
 	}
 
 	result.entries = entries
@@ -92,7 +96,7 @@ func (m *Mixer) searchChunk(ctx context.Context, chunkId string, query string, n
 func (m *Mixer) searchAppender(ctx context.Context, appender pb_almanac.AppenderClient, request *pb_almanac.SearchRequest, resultChan chan *partialResult) {
 	response, err := appender.Search(ctx, request)
 	if err != nil {
-		resultChan <- &partialResult{err: err}
+		resultChan <- &partialResult{err: fmt.Errorf("unable to search appender: %v", err)}
 		return
 	}
 	resultChan <- &partialResult{entries: response.Entries}
