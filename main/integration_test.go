@@ -128,14 +128,11 @@ func TestDeduplicatedEntries(t *testing.T) {
 	request, err := searchRequest("foo")
 	assert.NoError(t, err)
 
-	response, err := f.mixer.Search(context.Background(), request)
-	assert.NoError(t, err)
-
-	_, err = unpackResponse(response)
+	_, err = f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
 
 	// TODO(dino): Teach bleve how to dedupe docs based on their id.
-	// assert.Equal(t, 1, len(bleveResponse.Hits))
+	// assert.Equal(t, 1, len(response.Entries))
 }
 
 func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {
@@ -163,7 +160,11 @@ func searchRequest(query string) (*pb_almanac.SearchRequest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal bleve request: %v", err)
 	}
-	return &pb_almanac.SearchRequest{BleveRequestBytes: bleveBytes}, nil
+	return &pb_almanac.SearchRequest{
+		BleveRequestBytes: bleveBytes,
+		Num:               200,
+		Query:             query,
+	}, nil
 }
 
 func unpackResponse(response *pb_almanac.SearchResponse) (*bleve.SearchResult, error) {
