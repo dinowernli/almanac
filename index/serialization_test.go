@@ -3,8 +3,8 @@ package index
 import (
 	"testing"
 
-	"github.com/blevesearch/bleve"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
 
 type content struct {
@@ -12,23 +12,19 @@ type content struct {
 }
 
 func TestRoundtrip(t *testing.T) {
-	indexService, err := NewIndex()
+	index, err := NewIndex()
 	assert.NoError(t, err)
 
-	err = indexService.Index("id1", &content{Name: "foo"})
+	err = index.Index("id1", &content{Name: "foo"})
 	assert.NoError(t, err)
 
-	indexProto, err := Serialize(indexService)
+	indexProto, err := Serialize(index)
 	assert.NoError(t, err)
 
 	deserializedIndex, err := Deserialize(indexProto)
 	assert.NoError(t, err)
 
-	result, err := search(deserializedIndex, "foo")
+	result, err := deserializedIndex.Search(context.Background(), "foo", 200)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(result.Hits))
-}
-
-func search(index *Index, match string) (*bleve.SearchResult, error) {
-	return index.index.Search(bleve.NewSearchRequest(bleve.NewMatchQuery(match)))
+	assert.Equal(t, 1, len(result))
 }

@@ -3,8 +3,8 @@ package mixer
 import (
 	"fmt"
 
-	"dinowernli.me/almanac/discovery"
 	pb_almanac "dinowernli.me/almanac/proto"
+	"dinowernli.me/almanac/service/discovery"
 	"dinowernli.me/almanac/storage"
 
 	"golang.org/x/net/context"
@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// Mixer is an implementation of the mixer rpc service. It provides global
+// search functionality across the entire system.
 type Mixer struct {
 	storage   *storage.Storage
 	discovery *discovery.Discovery
@@ -20,40 +22,6 @@ type Mixer struct {
 // New returns a new mixer backed by the supplied storage.
 func New(storage *storage.Storage, discovery *discovery.Discovery) *Mixer {
 	return &Mixer{storage: storage, discovery: discovery}
-}
-
-func (m *Mixer) searchChunk(chunkId string, query string, num int32, resultChan chan *partialResult) {
-	result := &partialResult{}
-	chunk, err := m.storage.LoadChunk(chunkId)
-	if err != nil {
-		result.err = fmt.Errorf("unable to load chunk %s: %v\n", chunkId, err)
-		resultChan <- result
-	}
-	result.chunk = chunk
-
-	entries, err := chunk.Search(query, num)
-	if err != nil {
-		result.err = fmt.Errorf("unable to perform search on chunk %s: %v\n", chunkId, err)
-		resultChan <- result
-	}
-
-	result.entries = entries
-	resultChan <- result
-}
-
-type partialResult struct {
-	chunk   *storage.Chunk
-	entries []*pb_almanac.LogEntry
-	err     error
-}
-
-func (m *Mixer) searchAppender(ctx context.Context, appender pb_almanac.AppenderClient, request *pb_almanac.SearchRequest, resultChan chan *partialResult) {
-	response, err := appender.Search(ctx, request)
-	if err != nil {
-		resultChan <- &partialResult{err: err}
-		return
-	}
-	resultChan <- &partialResult{entries: response.Entries}
 }
 
 func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
@@ -68,7 +36,7 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	numSubRequests := len(appenders) + len(chunkIds)
 	resultChan := make(chan *partialResult, numSubRequests)
 	for _, chunkId := range chunkIds {
-		go m.searchChunk(chunkId, request.Query, request.Num, resultChan)
+		go m.searchChunk(ctx, chunkId, request.Query, request.Num, resultChan)
 	}
 	for _, appender := range appenders {
 		go m.searchAppender(ctx, appender, request, resultChan)
@@ -98,4 +66,44 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 
 	// TODO(dino): Sort and truncate. For now, just return everything.
 	return &pb_almanac.SearchResponse{Entries: allEntries}, nil
+}
+
+// searchChunk performs a search on a single chunk and pipes the result into
+// the supplied channel.
+func (m *Mixer) searchChunk(ctx context.Context, chunkId string, query string, num int32, resultChan chan *partialResult) {
+	result := &partialResult{}
+	chunk, err := m.storage.LoadChunk(chunkId)
+	if err != nil {
+		result.err = fmt.Errorf("unable to load chunk %s: %v\n", chunkId, err)
+		resultChan <- result
+		return
+	}
+	result.chunk = chunk
+
+	entries, err := chunk.Search(ctx, query, num)
+	if err != nil {
+		result.err = fmt.Errorf("unable to perform search on chunk %s: %v\n", chunkId, err)
+		resultChan <- result
+		return
+	}
+
+	result.entries = entries
+	resultChan <- result
+}
+
+// searchApender performs a search on a single appender and pipes the result into
+// the supplied channel.
+func (m *Mixer) searchAppender(ctx context.Context, appender pb_almanac.AppenderClient, request *pb_almanac.SearchRequest, resultChan chan *partialResult) {
+	response, err := appender.Search(ctx, request)
+	if err != nil {
+		resultChan <- &partialResult{err: fmt.Errorf("unable to search appender: %v", err)}
+		return
+	}
+	resultChan <- &partialResult{entries: response.Entries}
+}
+
+type partialResult struct {
+	chunk   *storage.Chunk
+	entries []*pb_almanac.LogEntry
+	err     error
 }

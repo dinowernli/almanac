@@ -33,17 +33,26 @@ service Ingester {
   rpc Ingest (IngestRequest) returns (IngestResponse);
 }
 
+// A request to search for log entries.
 message SearchRequest {
-  bytes bleve_request_bytes = 1;
-
+  // A start time in epoch millisconds, inclusive. The search only returns
+  // entries whose timestamp is at least this value.
   int64 start_ms = 2;
+
+  // An end time in epoch milliseconds. If non-zero, only entries whose
+  // timestamp is before this value are returned.
   int64 end_ms = 3;
+
+  // A text-format query.
   string query = 4;
+
+  // The maximum number of results to return.
   int32 num = 5;
 }
 
+// The result of searching for log entries.
 message SearchResponse {
-  bytes bleve_response_bytes = 1;
+  // All the entries which have matched the search.
   repeated LogEntry entries = 2;
 }
 

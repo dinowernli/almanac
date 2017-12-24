@@ -10,8 +10,8 @@ go_library(
     deps = [
         "//index:go_default_library",
         "//proto:go_default_library",
+        "//service/discovery:go_default_library",
         "//storage:go_default_library",
-        "@com_github_blevesearch_bleve//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",

@@ -6,7 +6,7 @@ import (
 	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 
-	"github.com/blevesearch/bleve"
+	"golang.org/x/net/context"
 )
 
 // Chunk is an in-memory, immutable representation of a stored chunk. A chunk
@@ -35,23 +35,17 @@ func openChunk(chunkId string, chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 }
 
 // Search returns all log entries in the chunk matching the supplied query.
-func (c *Chunk) Search(query string, num int32) ([]*pb_almanac.LogEntry, error) {
-	request := bleve.NewSearchRequestOptions(
-		bleve.NewMatchQuery(query),
-		int(num),
-		0, /* from */
-		false /* explain */)
-
-	result, err := c.index.Bleve().Search(request)
+func (c *Chunk) Search(ctx context.Context, query string, num int32) ([]*pb_almanac.LogEntry, error) {
+	ids, err := c.index.Search(ctx, query, num)
 	if err != nil {
 		return nil, fmt.Errorf("unable to search index: %v", err)
 	}
 
 	entries := []*pb_almanac.LogEntry{}
-	for _, hit := range result.Hits {
-		entry, ok := c.entries[hit.ID]
+	for _, id := range ids {
+		entry, ok := c.entries[id]
 		if !ok {
-			return nil, fmt.Errorf("could not locate hit %s", hit.ID)
+			return nil, fmt.Errorf("could not locate hit %s", id)
 		}
 		entries = append(entries, entry)
 	}
@@ -61,11 +55,6 @@ func (c *Chunk) Search(query string, num int32) ([]*pb_almanac.LogEntry, error) 
 // Close releases any resources associated with this chunk.
 func (c *Chunk) Close() error {
 	return c.index.Close()
-}
-
-func (c *Chunk) Index() *index.Index {
-	// TODO(dino): Remove this and migrate callers onto the Search() method.
-	return c.index
 }
 
 func (c *Chunk) fetchEntry(id string) (*pb_almanac.LogEntry, error) {
