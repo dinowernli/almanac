@@ -6,10 +6,10 @@ import (
 	"net"
 	"testing"
 
-	"dinowernli.me/almanac/appender"
-	dc "dinowernli.me/almanac/discovery"
-	mx "dinowernli.me/almanac/mixer"
 	pb_almanac "dinowernli.me/almanac/proto"
+	"dinowernli.me/almanac/service/appender"
+	dc "dinowernli.me/almanac/service/discovery"
+	mx "dinowernli.me/almanac/service/mixer"
 	st "dinowernli.me/almanac/storage"
 
 	"github.com/stretchr/testify/assert"
