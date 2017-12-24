@@ -7,6 +7,7 @@ go_library(
     deps = [
         "//index:go_default_library",
         "//proto:go_default_library",
+        "@com_github_blevesearch_bleve//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

@@ -49,10 +49,7 @@ func TestNoEntries(t *testing.T) {
 
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
-
-	bleveResponse, err := unpackResponse(response)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(bleveResponse.Hits))
+	assert.Equal(t, 0, len(response.Entries))
 }
 
 func TestSearchesAppenders(t *testing.T) {
@@ -86,10 +83,7 @@ func TestSearchesAppenders(t *testing.T) {
 
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
-
-	bleveResponse, err := unpackResponse(response)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(bleveResponse.Hits))
+	assert.Equal(t, 2, len(response.Entries))
 }
 
 func TestRoundTripThroughStorage(t *testing.T) {
@@ -113,10 +107,7 @@ func TestRoundTripThroughStorage(t *testing.T) {
 
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
-
-	bleveResponse, err := unpackResponse(response)
-	assert.NoError(t, err)
-	assert.Equal(t, numEntries, len(bleveResponse.Hits))
+	assert.Equal(t, numEntries, len(response.Entries))
 }
 
 func TestDeduplicatedEntries(t *testing.T) {

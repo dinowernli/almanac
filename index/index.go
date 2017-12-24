@@ -48,6 +48,10 @@ func NewIndex() (*Index, error) {
 	return &Index{index: index, path: dir}, nil
 }
 
+func (i *Index) Bleve() bleve.Index {
+	return i.index
+}
+
 func (i *Index) Index(id string, data interface{}) error {
 	return i.index.Index(id, data)
 }
