@@ -52,7 +52,7 @@ func (i *Index) Search(ctx context.Context, query string, num int32) ([]string, 
 		0,     // from
 		false) // explain
 
-	response, err := i.index.Search(request)
+	response, err := i.index.SearchInContext(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("unable to search index: %v", err)
 	}
@@ -64,12 +64,7 @@ func (i *Index) Search(ctx context.Context, query string, num int32) ([]string, 
 	return result, nil
 }
 
-func (i *Index) Bleve() bleve.Index {
-	// TODO(dino): Implementation detail, teach this to accept bleve
-	// searches instead.
-	return i.index
-}
-
+// Index adds the supplied data to this index.
 func (i *Index) Index(id string, data interface{}) error {
 	return i.index.Index(id, data)
 }
