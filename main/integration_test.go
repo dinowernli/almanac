@@ -12,7 +12,6 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	st "dinowernli.me/almanac/storage"
 
-	"github.com/blevesearch/bleve"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -151,29 +150,11 @@ func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.Ap
 }
 
 func searchRequest(query string) (*pb_almanac.SearchRequest, error) {
-	bleveRequest := bleve.NewSearchRequestOptions(
-		bleve.NewMatchQuery(query),
-		200, /* size */
-		0,   /* from */
-		false /* explain */)
-	bleveBytes, err := json.Marshal(bleveRequest)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal bleve request: %v", err)
-	}
+	// TODO(dino): this doesn't need to return an error (and could be inlined).
 	return &pb_almanac.SearchRequest{
-		BleveRequestBytes: bleveBytes,
-		Num:               200,
-		Query:             query,
+		Num:   200,
+		Query: query,
 	}, nil
-}
-
-func unpackResponse(response *pb_almanac.SearchResponse) (*bleve.SearchResult, error) {
-	result := &bleve.SearchResult{}
-	err := json.Unmarshal(response.BleveResponseBytes, result)
-	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal bleve response: %v", err)
-	}
-	return result, nil
 }
 
 // createFixture sets up a test fixture, including all services required to run the system.
