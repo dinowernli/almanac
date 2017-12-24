@@ -26,13 +26,13 @@ type Storage struct {
 func (s *Storage) ListChunks(startMs int64, endMs int64) ([]string, error) {
 	// TODO(dino): Actually respect the start and end times. For now, return
 	// all chunks.
-	return s.backend.List(chunkPrefix)
+	return s.backend.list(chunkPrefix)
 }
 
 // LoadChunk loads the chunk with the supplied id. The returned chunk uses
 // resources which must be freed once it is no longer in use.
 func (s *Storage) LoadChunk(chunkId string) (*Chunk, error) {
-	bytes, err := s.backend.Read(chunkId)
+	bytes, err := s.backend.read(chunkId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read key %s: %v", chunkId, err)
 	}
@@ -51,7 +51,7 @@ func (s *Storage) StoreChunk(chunkId string, chunkProto *pb_almanac.Chunk) error
 	if err != nil {
 		return fmt.Errorf("unable to marshal chunk proto: %v", err)
 	}
-	return s.backend.Write(fmt.Sprintf("%s%s", chunkPrefix, chunkId), bytes)
+	return s.backend.write(fmt.Sprintf("%s%s", chunkPrefix, chunkId), bytes)
 }
 
 // NewTempDiskStorage creates a backend backed by a new temporary directory.
