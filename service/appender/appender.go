@@ -3,6 +3,8 @@ package appender
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/rand"
 	"sync"
 
 	"dinowernli.me/almanac/index"
@@ -14,6 +16,10 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+const (
+	chunkUidLength = 5
+)
+
 // appender keeps track of a single open chunk under construction at a time and
 // periodically decides that the open chunk is complete, at which point the
 // appender writes the chunk to storage. The appender also knows how to answer
@@ -21,16 +27,15 @@ import (
 type Appender struct {
 	entries     map[string]*pb_almanac.LogEntry
 	index       *index.Index
-	chunkId     int
+	chunkId     *pb_almanac.ChunkId
 	appendMutex *sync.Mutex
 
-	appenderId         string
 	storage            *storage.Storage
 	maxEntriesPerChunk int
 }
 
 // New returns a new appender backed by the supplied storage.
-func New(appenderId string, storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
+func New(storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
 	if maxEntriesPerChunk < 1 {
 		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxEntriesPerChunk)
 	}
@@ -43,10 +48,10 @@ func New(appenderId string, storage *storage.Storage, maxEntriesPerChunk int) (*
 	return &Appender{
 		entries:            map[string]*pb_almanac.LogEntry{},
 		index:              index,
+		chunkId:            newEmptyChunkId(),
 		appendMutex:        &sync.Mutex{},
 		storage:            storage,
 		maxEntriesPerChunk: maxEntriesPerChunk,
-		appenderId:         appenderId,
 	}, nil
 }
 
@@ -99,6 +104,13 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 	}
 
 	a.entries[entryId] = request.Entry
+	ts := request.Entry.TimestampMs
+	if ts > a.chunkId.EndMs {
+		a.chunkId.EndMs = ts
+	}
+	if ts < a.chunkId.StartMs {
+		a.chunkId.StartMs = ts
+	}
 
 	// If the open chunk has grown enough, close it up and start a new one.
 	if len(a.entries) >= a.maxEntriesPerChunk {
@@ -114,6 +126,7 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 		}
 		a.index = index
 		a.entries = map[string]*pb_almanac.LogEntry{}
+		a.chunkId = newEmptyChunkId()
 	}
 
 	return &pb_almanac.AppendResponse{}, nil
@@ -126,6 +139,7 @@ func (a *Appender) storeChunk() error {
 	if err != nil {
 		return fmt.Errorf("unable to serialize index: %v", err)
 	}
+	a.index.Close()
 
 	entries := []*pb_almanac.LogEntry{}
 	for _, e := range a.entries {
@@ -133,20 +147,28 @@ func (a *Appender) storeChunk() error {
 	}
 
 	chunkProto := &pb_almanac.Chunk{
+		Id:      a.chunkId,
 		Entries: entries,
 		Index:   indexProto,
 	}
 
-	chunkName := a.nextChunkName()
-	err = a.storage.StoreChunk(chunkName, chunkProto)
+	err = a.storage.StoreChunk(chunkProto)
 	if err != nil {
-		return fmt.Errorf("unable to store chunk %s: %v", chunkName, err)
+		return fmt.Errorf("unable to store chunk %v: %v", chunkProto.Id, err)
 	}
 	return nil
 }
 
-func (a *Appender) nextChunkName() string {
-	result := fmt.Sprintf("%d-%s", a.chunkId, a.appenderId)
-	a.chunkId++
-	return result
+func newEmptyChunkId() *pb_almanac.ChunkId {
+	return &pb_almanac.ChunkId{
+		Uid:     newUid(),
+		StartMs: math.MaxInt64,
+		EndMs:   math.MinInt64,
+	}
+}
+
+func newUid() string {
+	// Make sure our number actually has enough digits and doesn't overflow.
+	number := int64(rand.Int31() + 10*chunkUidLength)
+	return fmt.Sprintf("%d", number)[:chunkUidLength]
 }

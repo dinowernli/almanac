@@ -20,12 +20,29 @@ message BleveIndex {
   bytes directory_zip = 1;
 }
 
+// Holds the data used to identify a chunk.
+message ChunkId {
+  // The smallest timestamp of any entry present in the chunk.
+  int64 start_ms = 1;
+
+  // The greatest timestamp of any entry present in the chunk.
+  int64 end_ms = 2;
+
+  // A unique id used to avoid chunk id collisions for chunks produced on
+  // different machines.
+  string uid = 3;
+}
+
 // Represents a chunk of log entries and some additional information about the
 // entries.
 message Chunk {
+  // The identifier of this chunk. Used to determine its name in canonical
+  // storage.
+  ChunkId id = 1;
+
   // The raw entries present in this chunk.
-  repeated LogEntry entries = 1;
+  repeated LogEntry entries = 2;
 
   // An serialized index which can be used to perform searches.
-  BleveIndex index = 2;
+  BleveIndex index = 3;
 }

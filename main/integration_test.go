@@ -146,7 +146,7 @@ func createFixture() (*fixture, error) {
 	appenderAddresses := []string{}
 	appenders := []*appender.Appender{}
 	for i := 0; i < numAppenders; i++ {
-		appender, err := appender.New(fmt.Sprintf("appender-%d", i), storage, entriesPerChunk)
+		appender, err := appender.New(storage, entriesPerChunk)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create appender %d: %v", i, err)
 		}
