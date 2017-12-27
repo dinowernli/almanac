@@ -28,7 +28,12 @@ func New(appenderEndpoints []string) (*Discovery, error) {
 }
 
 // ListAppenders returns a list of clients, one each per appender in the
-// system.
+// system. The returned list if a snapshot of the discovery object's
+// canonical list, so callers my modify the returned list.
 func (d *Discovery) ListAppenders() []pb_almanac.AppenderClient {
-	return d.appenders
+	result := []pb_almanac.AppenderClient{}
+	for _, a := range d.appenders {
+		result = append(result, a)
+	}
+	return result
 }
