@@ -2,6 +2,7 @@ package mixer
 
 import (
 	"fmt"
+	"sort"
 
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/service/discovery"
@@ -64,8 +65,23 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 		return nil, grpc.Errorf(codes.Internal, "error executing search: %v", err)
 	}
 
-	// TODO(dino): Sort and truncate. For now, just return everything.
-	return &pb_almanac.SearchResponse{Entries: allEntries}, nil
+	// Sort all the entries by timestamp and take the first "num" distinct ones.
+	sort.Sort(byTimestamp(allEntries))
+	result := []*pb_almanac.LogEntry{}
+	seen := map[string]struct{}{}
+	for _, entry := range allEntries {
+		if _, ok := seen[entry.Id]; ok {
+			continue
+		}
+		seen[entry.Id] = struct{}{}
+
+		result = append(result, entry)
+		if len(result) >= int(request.Num) {
+			break
+		}
+	}
+
+	return &pb_almanac.SearchResponse{Entries: result}, nil
 }
 
 // searchChunk performs a search on a single chunk and pipes the result into
@@ -107,3 +123,9 @@ type partialResult struct {
 	entries []*pb_almanac.LogEntry
 	err     error
 }
+
+type byTimestamp []*pb_almanac.LogEntry
+
+func (h byTimestamp) Len() int           { return len(h) }
+func (h byTimestamp) Less(i, j int) bool { return h[i].TimestampMs < h[j].TimestampMs }
+func (h byTimestamp) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }

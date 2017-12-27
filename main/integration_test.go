@@ -43,9 +43,7 @@ func TestNoEntries(t *testing.T) {
 	f, err := createFixture()
 	assert.NoError(t, err)
 
-	request, err := searchRequest("foo")
-	assert.NoError(t, err)
-
+	request := &pb_almanac.SearchRequest{Num: 200, Query: "foo"}
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(response.Entries))
@@ -56,30 +54,28 @@ func TestSearchesAppenders(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Add an entry containing "foo" to the first appender.
-	append1, err := appendRequest("entry1", "foo", 123)
+	append1, err := appendRequest("id1", "foo", 123)
 	assert.NoError(t, err)
 
 	_, err = f.appenders[0].Append(context.Background(), append1)
 	assert.NoError(t, err)
 
 	// Add a different entry containing "foo" to another appender.
-	append2, err := appendRequest("entry2", "foo", 567)
+	append2, err := appendRequest("id2", "foo", 567)
 	assert.NoError(t, err)
 
 	_, err = f.appenders[2].Append(context.Background(), append2)
 	assert.NoError(t, err)
 
-	// Make sure we get two hits when we search for foo.
-	append3, err := appendRequest("entry3", "baz", 789)
+	// Add an entry which does not contain "foo".
+	append3, err := appendRequest("id3", "baz", 789)
 	assert.NoError(t, err)
 
 	_, err = f.appenders[1].Append(context.Background(), append3)
 	assert.NoError(t, err)
 
-	// Now perform some searches.
-	request, err := searchRequest("foo")
-	assert.NoError(t, err)
-
+	// Make sure we get two hits when we search for foo.
+	request := &pb_almanac.SearchRequest{Num: 200, Query: "foo"}
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(response.Entries))
@@ -101,20 +97,18 @@ func TestRoundTripThroughStorage(t *testing.T) {
 	}
 
 	// Make sure all entries turn up.
-	request, err := searchRequest("foo")
-	assert.NoError(t, err)
-
+	request := &pb_almanac.SearchRequest{Num: 200, Query: "foo"}
 	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
 	assert.Equal(t, numEntries, len(response.Entries))
 }
 
-func TestDeduplicatedEntries(t *testing.T) {
+func TestDeduplicatesEntries(t *testing.T) {
 	f, err := createFixture()
 	assert.NoError(t, err)
 
 	// Add an entry containing "foo" to multiple appenders.
-	append1, err := appendRequest("entry1", "foo", 123)
+	append1, err := appendRequest("id1", "foo", 123)
 	assert.NoError(t, err)
 
 	_, err = f.appenders[0].Append(context.Background(), append1)
@@ -123,15 +117,12 @@ func TestDeduplicatedEntries(t *testing.T) {
 	_, err = f.appenders[1].Append(context.Background(), append1)
 	assert.NoError(t, err)
 
-	// Now perform some searches.
-	request, err := searchRequest("foo")
+	// Now make sure that a search for foo only returns the entry once.
+	request := &pb_almanac.SearchRequest{Num: 200, Query: "foo"}
+	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
 
-	_, err = f.mixer.Search(context.Background(), request)
-	assert.NoError(t, err)
-
-	// TODO(dino): Teach bleve how to dedupe docs based on their id.
-	// assert.Equal(t, 1, len(response.Entries))
+	assert.Equal(t, 1, len(response.Entries))
 }
 
 func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {
@@ -146,14 +137,6 @@ func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.Ap
 			TimestampMs: timestampMs,
 			Id:          id,
 		},
-	}, nil
-}
-
-func searchRequest(query string) (*pb_almanac.SearchRequest, error) {
-	// TODO(dino): this doesn't need to return an error (and could be inlined).
-	return &pb_almanac.SearchRequest{
-		Num:   200,
-		Query: query,
 	}, nil
 }
 
