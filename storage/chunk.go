@@ -2,12 +2,48 @@ package storage
 
 import (
 	"fmt"
+	"strings"
 
 	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"golang.org/x/net/context"
 )
+
+const (
+	chunkIdFormat    = "%d-%d-%s"
+	chunkIdSeparator = "-"
+)
+
+// ChunkId returns the string representation of the supplied chunk id proto.
+func ChunkId(idProto *pb_almanac.ChunkId) (string, error) {
+	if idProto.Uid == "" {
+		return "", fmt.Errorf("cannot create chunk id with empty uid")
+	}
+
+	if strings.Contains(idProto.Uid, chunkIdSeparator) {
+		return "", fmt.Errorf("chunk uid cannot contain '-', but got: %s", idProto.Uid)
+	}
+
+	if idProto.StartMs > idProto.EndMs {
+		return "", fmt.Errorf("invalid start and end times: start=%d, end=%d", idProto.StartMs, idProto.EndMs)
+	}
+
+	return fmt.Sprintf(chunkIdFormat, idProto.StartMs, idProto.EndMs, idProto.Uid), nil
+}
+
+// ChunkIdProto returns the structured representation of the supplied chunk id.
+func ChunkIdProto(chunkId string) (*pb_almanac.ChunkId, error) {
+	var uid string
+	var startMs int64
+	var endMs int64
+	_, err := fmt.Sscanf(chunkId, chunkIdFormat, &startMs, &endMs, &uid)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse id %s: %v", chunkId, err)
+	}
+
+	return &pb_almanac.ChunkId{StartMs: startMs, EndMs: endMs, Uid: uid}, nil
+}
 
 // Chunk is an in-memory, immutable representation of a stored chunk. A chunk
 // must be closed by calling Close() once it is no longer in use.
