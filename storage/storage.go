@@ -46,7 +46,12 @@ func (s *Storage) LoadChunk(chunkId string) (*Chunk, error) {
 }
 
 // StoreChunk persists the supplied chunk proto in storage.
-func (s *Storage) StoreChunk(chunkId string, chunkProto *pb_almanac.Chunk) error {
+func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) error {
+	chunkId, err := ChunkId(chunkProto.Id)
+	if err != nil {
+		return fmt.Errorf("unable to extract chunk id: %v", err)
+	}
+
 	bytes, err := proto.Marshal(chunkProto)
 	if err != nil {
 		return fmt.Errorf("unable to marshal chunk proto: %v", err)
