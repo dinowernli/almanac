@@ -27,6 +27,7 @@ go_test(
         "//proto:go_default_library",
         "//service/appender:go_default_library",
         "//service/discovery:go_default_library",
+        "//service/ingester:go_default_library",
         "//service/mixer:go_default_library",
         "//storage:go_default_library",
         "@com_github_blevesearch_bleve//:go_default_library",

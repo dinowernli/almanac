@@ -1,4 +1,4 @@
-package appender
+package ingester
 
 import (
 	"fmt"
@@ -50,6 +50,9 @@ func (i *Ingester) selectAppenders() ([]pb_almanac.AppenderClient, error) {
 	if i.appenderFanout < len(allAppenders) {
 		return nil, fmt.Errorf("cannot select %d appender from a list of size %d", i.appenderFanout, len(allAppenders))
 	}
+
+	// TODO(dino): Consider remembering the appenders last used and trying to find them.
+	// Shuffle the first time so that different ingesters use different subsets of appenders.
 
 	return allAppenders[0:i.appenderFanout], nil
 }
