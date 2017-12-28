@@ -20,7 +20,7 @@ const (
 	chunkUidLength = 5
 )
 
-// appender keeps track of a single open chunk under construction at a time and
+// Appender keeps track of a single open chunk under construction at a time and
 // periodically decides that the open chunk is complete, at which point the
 // appender writes the chunk to storage. The appender also knows how to answer
 // search requests for the currently open chunk.
@@ -161,14 +161,22 @@ func (a *Appender) storeChunk() error {
 
 func newEmptyChunkId() *pb_almanac.ChunkId {
 	return &pb_almanac.ChunkId{
-		Uid:     newUid(),
+		Uid:     randomString(chunkUidLength),
 		StartMs: math.MaxInt64,
 		EndMs:   math.MinInt64,
 	}
 }
 
-func newUid() string {
-	// Make sure our number actually has enough digits and doesn't overflow.
-	number := int64(rand.Int31() + 10*chunkUidLength)
-	return fmt.Sprintf("%d", number)[:chunkUidLength]
+// TODO(dino): Deduplicate these methods with appender.go.
+// randomString produces a random string of lower case letters.
+func randomString(num int) string {
+	bytes := make([]byte, num)
+	for i := 0; i < num; i++ {
+		bytes[i] = byte(randomInt(97, 122)) // lowercase letters.
+	}
+	return string(bytes)
+}
+
+func randomInt(min int, max int) int {
+	return min + rand.Intn(max-min)
 }

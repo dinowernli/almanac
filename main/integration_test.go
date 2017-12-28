@@ -9,6 +9,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/service/appender"
 	dc "dinowernli.me/almanac/service/discovery"
+	in "dinowernli.me/almanac/service/ingester"
 	mx "dinowernli.me/almanac/service/mixer"
 	st "dinowernli.me/almanac/storage"
 
@@ -18,8 +19,9 @@ import (
 )
 
 const (
-	entriesPerChunk = 10
-	numAppenders    = 5
+	entriesPerChunk = 10 // The max number of entries in a single chunk.
+	numAppenders    = 5  // The number of appenders in the system.
+	appenderFanout  = 2  // The number of appender each ingester talks to.
 )
 
 var (
@@ -29,6 +31,7 @@ var (
 // fixture holds a test setup ready to use for testing.
 type fixture struct {
 	appenders []*appender.Appender
+	ingester  *in.Ingester
 	storage   *st.Storage
 	discovery *dc.Discovery
 	mixer     *mx.Mixer
@@ -168,8 +171,14 @@ func createFixture() (*fixture, error) {
 		return nil, fmt.Errorf("unable to create discovery: %v", err)
 	}
 
+	ingester, err := in.New(discovery, appenderFanout)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create ingester: %v", err)
+	}
+
 	return &fixture{
 		appenders: appenders,
+		ingester:  ingester,
 		storage:   storage,
 		discovery: discovery,
 		mixer:     mx.New(storage, discovery),
