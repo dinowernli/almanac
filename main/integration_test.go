@@ -39,7 +39,9 @@ type fixture struct {
 
 // entry represents a log entry as would be supplied by a user of the system.
 type entry struct {
-	Message string
+	Message     string `json:"message"`
+	Logger      string `json:"logger"`
+	TimestampMs int64  `json:"timestamp_ms"`
 }
 
 func TestNoEntries(t *testing.T) {
@@ -128,8 +130,64 @@ func TestDeduplicatesEntries(t *testing.T) {
 	assert.Equal(t, 1, len(response.Entries))
 }
 
+func TestIngestsEntry(t *testing.T) {
+	f, err := createFixture()
+	assert.NoError(t, err)
+
+	// Ship an entry with a predefined timestamp.
+	ingestRequest1, err := ingestRequest(&entry{Message: "foo", TimestampMs: 5000})
+	assert.NoError(t, err)
+	_, err = f.ingester.Ingest(context.Background(), ingestRequest1)
+	assert.NoError(t, err)
+
+	// Not timestamp for this entry, the ingester should infer it.
+	ingestRequest2, err := ingestRequest(&entry{Message: "foo"})
+	assert.NoError(t, err)
+	_, err = f.ingester.Ingest(context.Background(), ingestRequest2)
+	assert.NoError(t, err)
+
+	request := &pb_almanac.SearchRequest{Num: 200, Query: "foo"}
+	response, err := f.mixer.Search(context.Background(), request)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 2, len(response.Entries))
+
+	// Make sure we have the resulting entries sorted in ascending order by timestamp.
+	assert.Equal(t, ingestRequest1.EntryJson, response.Entries[0].EntryJson)
+	assert.Equal(t, int64(5000), response.Entries[0].TimestampMs)
+
+	assert.Equal(t, ingestRequest2.EntryJson, response.Entries[1].EntryJson)
+	assert.Equal(t, true, response.Entries[1].TimestampMs > 6000)
+}
+
+func TestQueryRange(t *testing.T) {
+	f, err := createFixture()
+	assert.NoError(t, err)
+
+	ingestRequest1, err := ingestRequest(&entry{Message: "foo", TimestampMs: 5000})
+	assert.NoError(t, err)
+	_, err = f.ingester.Ingest(context.Background(), ingestRequest1)
+	assert.NoError(t, err)
+
+	// Issue a query for a range which does not contain the value above.
+	request := &pb_almanac.SearchRequest{Num: 200, Query: "foo", StartMs: 3000, EndMs: 4000}
+	_, err = f.mixer.Search(context.Background(), request)
+	assert.NoError(t, err)
+
+	// TODO(dino): We don't yet correctly respect query time ranges.
+	// assert.Equal(t, 0, len(response.Entries))
+}
+
+func ingestRequest(e *entry) (*pb_almanac.IngestRequest, error) {
+	entryJson, err := json.Marshal(e)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal entry to json: %v", err)
+	}
+	return &pb_almanac.IngestRequest{EntryJson: string(entryJson)}, nil
+}
+
 func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {
-	fooJson, err := json.Marshal(&entry{message})
+	fooJson, err := json.Marshal(&entry{Message: message})
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal entry to json: %v", err)
 	}

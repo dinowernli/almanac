@@ -78,8 +78,8 @@ func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest
 // sent to.
 func (i *Ingester) selectAppenders() ([]pb_almanac.AppenderClient, error) {
 	allAppenders := i.discovery.ListAppenders()
-	if i.appenderFanout < len(allAppenders) {
-		return nil, fmt.Errorf("cannot select %d appender from a list of size %d", i.appenderFanout, len(allAppenders))
+	if i.appenderFanout > len(allAppenders) {
+		return nil, fmt.Errorf("cannot select %d appenders from a list of size %d", i.appenderFanout, len(allAppenders))
 	}
 
 	// TODO(dino): Consider remembering the appenders last used and trying to find them.
@@ -98,21 +98,19 @@ func extractEntry(rawJson string) (*pb_almanac.LogEntry, error) {
 		return nil, fmt.Errorf("unable to parse raw entry")
 	}
 
-	var timestampMs int64
+	timestampMs := int64(0)
 
 	// Attempt to extract a timestamp.
-	foundTimestamp := false
 	value, ok := rawEntry[timestampField]
 	if ok {
 		err := json.Unmarshal(*value, &timestampMs)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse value for timestamp: %v", err)
 		}
-		foundTimestamp = true
 	}
 
 	// If no timestamp was provided, just use "now".
-	if !foundTimestamp {
+	if timestampMs == 0 {
 		timestampMs = time.Now().UnixNano() / nanosPerMilli
 	}
 
