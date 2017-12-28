@@ -167,6 +167,7 @@ func newEmptyChunkId() *pb_almanac.ChunkId {
 	}
 }
 
+// TODO(dino): Deduplicate these methods with appender.go.
 // randomString produces a random string of lower case letters.
 func randomString(num int) string {
 	bytes := make([]byte, num)

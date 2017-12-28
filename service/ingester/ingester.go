@@ -3,7 +3,7 @@ package ingester
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"math/rand"
 	"time"
 
 	pb_almanac "dinowernli.me/almanac/proto"
@@ -16,6 +16,7 @@ import (
 
 const (
 	timestampField = "timestamp_ms"
+	nanosPerMilli  = 1000000
 )
 
 // Ingester is an implementation of the ingester service. It accepts log
@@ -40,18 +41,35 @@ func New(discovery *dc.Discovery, appenderFanout int) (*Ingester, error) {
 }
 
 func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest) (*pb_almanac.IngestResponse, error) {
+	// Parse the incoming raw log entry, extracting some structure.
 	entry, err := extractEntry(request.EntryJson)
 	if err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, "unable to extract log entry from json: %v", err)
 	}
 
+	// Send an append request to a select bunch of appenders.
 	appenders, err := i.selectAppenders()
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, "unable to select appenders: %v", err)
 	}
 
-	// TODO(dino): Send an entry to every appender, return when done.
-	log.Printf("sending to %d appenders, %v\n", len(appenders), entry)
+	appendRequest := &pb_almanac.AppendRequest{Entry: entry}
+	resultChan := make(chan error, len(appenders))
+	for _, appender := range appenders {
+		go func() {
+			_, err := appender.Append(ctx, appendRequest)
+			resultChan <- err
+		}()
+	}
+
+	// TODO(dino): be smarter about how many append calls need to have succeeded. For now,
+	// we error out if any of the append calls fail.
+	for i := 0; i < len(appenders); i++ {
+		err := <-resultChan
+		if err != nil {
+			return nil, grpc.Errorf(codes.Internal, "unable to send append request: %v", err)
+		}
+	}
 
 	return &pb_almanac.IngestResponse{}, nil
 }
@@ -95,14 +113,33 @@ func extractEntry(rawJson string) (*pb_almanac.LogEntry, error) {
 
 	// If no timestamp was provided, just use "now".
 	if !foundTimestamp {
-		timestampMs = time.Now().Unix()
+		timestampMs = time.Now().UnixNano() / nanosPerMilli
 	}
 
-	// TODO(dino): Actually compue an id for the entry.
-	id := "boo"
 	return &pb_almanac.LogEntry{
 		EntryJson:   rawJson,
 		TimestampMs: timestampMs,
-		Id:          id,
+		Id:          newEntryId(timestampMs),
 	}, nil
+}
+
+// newEntryId returns a string id for an entry with the given timestamp. The
+// ids have the property that sorting them lexicographically orders them by
+// timestamp, but that no two different entries ever end up with the same id.
+func newEntryId(timestampMs int64) string {
+	return fmt.Sprintf("%d-%s", timestampMs, randomString(3))
+}
+
+// TODO(dino): Deduplicate these methods with appender.go.
+// randomString produces a random string of lower case letters.
+func randomString(num int) string {
+	bytes := make([]byte, num)
+	for i := 0; i < num; i++ {
+		bytes[i] = byte(randomInt(97, 122)) // lowercase letters.
+	}
+	return string(bytes)
+}
+
+func randomInt(min int, max int) int {
+	return min + rand.Intn(max-min)
 }
