@@ -171,11 +171,10 @@ func TestQueryRange(t *testing.T) {
 
 	// Issue a query for a range which does not contain the value above.
 	request := &pb_almanac.SearchRequest{Num: 200, Query: "foo", StartMs: 3000, EndMs: 4000}
-	_, err = f.mixer.Search(context.Background(), request)
+	response, err := f.mixer.Search(context.Background(), request)
 	assert.NoError(t, err)
 
-	// TODO(dino): We don't yet correctly respect query time ranges.
-	// assert.Equal(t, 0, len(response.Entries))
+	assert.Equal(t, 0, len(response.Entries))
 }
 
 func ingestRequest(e *entry) (*pb_almanac.IngestRequest, error) {

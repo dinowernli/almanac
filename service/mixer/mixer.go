@@ -26,6 +26,10 @@ func New(storage *storage.Storage, discovery *discovery.Discovery) *Mixer {
 }
 
 func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
+	if request.StartMs != 0 && request.EndMs != 0 && request.StartMs > request.EndMs {
+		return nil, grpc.Errorf(codes.InvalidArgument, "cannot query, start(%d) is greater than end (%d)", request.StartMs, request.EndMs)
+	}
+
 	// Do some prep for the parallel searches.
 	appenders := m.discovery.ListAppenders()
 	chunkIds, err := m.storage.ListChunks(request.StartMs, request.EndMs)
@@ -37,7 +41,7 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	numSubRequests := len(appenders) + len(chunkIds)
 	resultChan := make(chan *partialResult, numSubRequests)
 	for _, chunkId := range chunkIds {
-		go m.searchChunk(ctx, chunkId, request.Query, request.Num, resultChan)
+		go m.searchChunk(ctx, chunkId, request, resultChan)
 	}
 	for _, appender := range appenders {
 		go m.searchAppender(ctx, appender, request, resultChan)
@@ -86,7 +90,7 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 
 // searchChunk performs a search on a single chunk and pipes the result into
 // the supplied channel.
-func (m *Mixer) searchChunk(ctx context.Context, chunkId string, query string, num int32, resultChan chan *partialResult) {
+func (m *Mixer) searchChunk(ctx context.Context, chunkId string, request *pb_almanac.SearchRequest, resultChan chan *partialResult) {
 	result := &partialResult{}
 	chunk, err := m.storage.LoadChunk(chunkId)
 	if err != nil {
@@ -96,7 +100,7 @@ func (m *Mixer) searchChunk(ctx context.Context, chunkId string, query string, n
 	}
 	result.chunk = chunk
 
-	entries, err := chunk.Search(ctx, query, num)
+	entries, err := chunk.Search(ctx, request.Query, request.Num, request.StartMs, request.EndMs)
 	if err != nil {
 		result.err = fmt.Errorf("unable to perform search on chunk %s: %v\n", chunkId, err)
 		resultChan <- result

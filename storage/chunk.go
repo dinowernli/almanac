@@ -71,7 +71,7 @@ func openChunk(chunkId string, chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 }
 
 // Search returns all log entries in the chunk matching the supplied query.
-func (c *Chunk) Search(ctx context.Context, query string, num int32) ([]*pb_almanac.LogEntry, error) {
+func (c *Chunk) Search(ctx context.Context, query string, num int32, startMs int64, endMs int64) ([]*pb_almanac.LogEntry, error) {
 	ids, err := c.index.Search(ctx, query, num)
 	if err != nil {
 		return nil, fmt.Errorf("unable to search index: %v", err)
@@ -82,6 +82,13 @@ func (c *Chunk) Search(ctx context.Context, query string, num int32) ([]*pb_alma
 		entry, ok := c.entries[id]
 		if !ok {
 			return nil, fmt.Errorf("could not locate hit %s", id)
+		}
+
+		if startMs != 0 && entry.TimestampMs < startMs {
+			continue
+		}
+		if endMs != 0 && entry.TimestampMs > endMs {
+			continue
 		}
 		entries = append(entries, entry)
 	}

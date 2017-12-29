@@ -70,6 +70,13 @@ func (a *Appender) Search(ctx context.Context, request *pb_almanac.SearchRequest
 		if !ok {
 			return nil, fmt.Errorf("could not locate hit %s", id)
 		}
+
+		if request.StartMs != 0 && entry.TimestampMs < request.StartMs {
+			continue
+		}
+		if request.EndMs != 0 && entry.TimestampMs > request.EndMs {
+			continue
+		}
 		entries = append(entries, entry)
 	}
 
