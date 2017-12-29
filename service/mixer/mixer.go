@@ -2,6 +2,8 @@ package mixer
 
 import (
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 	"sort"
 
@@ -17,8 +19,10 @@ import (
 const (
 	httpUrl       = "/mixer"
 	urlParamQuery = "q"
-	//urlParamStartMs = "startMs"
-	//urlParamEndMs   = "endMs"
+)
+
+var (
+	htmlTemplate = template.Must(template.ParseFiles("templates/mixer.html.tmpl"))
 )
 
 // Mixer is an implementation of the mixer rpc service. It provides global
@@ -149,7 +153,15 @@ func (m *Mixer) handleHttp(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(writer, "failed to execute query: %v", err)
 	}
 
-	fmt.Fprintf(writer, "request: %+v\nresponse: %+v", queryRequest, response)
+	err = htmlTemplate.ExecuteTemplate(writer, "mixer.html.tmpl", struct {
+		Request  *pb_almanac.SearchRequest
+		Response *pb_almanac.SearchResponse
+	}{queryRequest, response})
+	if err != nil {
+		fmt.Fprintf(writer, "failed to render: %v", err)
+	}
+
+	log.Printf("rendered\n")
 }
 
 type partialResult struct {

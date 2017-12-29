@@ -6,6 +6,7 @@ go_library(
         ["*.go"],
         exclude = ["*_test.go"],
     ),
+    data = ["//templates"],
     visibility = ["//visibility:public"],
     deps = [
         "//index:go_default_library",

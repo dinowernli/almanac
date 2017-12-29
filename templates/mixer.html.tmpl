@@ -1,0 +1,10 @@
+<!doctype html>
+<title>Mixer</title>
+<body>
+  <div class="query">{{ .Request }}</div>
+  <div class="results">
+    {{ range .Response.Entries }}
+      <div class="result">{{ . }}</div>
+    {{ end }}
+  </div>
+</body>
