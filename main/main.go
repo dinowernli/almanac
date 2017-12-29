@@ -18,7 +18,17 @@ func main() {
 		panic(err)
 	}
 
+	ingestRequest2, err := ingestRequest(&entry{Message: "foo", TimestampMs: 5007})
+	if err != nil {
+		panic(err)
+	}
+
 	_, err = fixture.ingester.Ingest(context.Background(), ingestRequest1)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = fixture.ingester.Ingest(context.Background(), ingestRequest2)
 	if err != nil {
 		panic(err)
 	}
