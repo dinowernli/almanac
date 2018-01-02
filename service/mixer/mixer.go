@@ -2,11 +2,10 @@ package mixer
 
 import (
 	"fmt"
-	"html/template"
-	"log"
 	"net/http"
 	"sort"
 
+	almHttp "dinowernli.me/almanac/http"
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/service/discovery"
 	"dinowernli.me/almanac/storage"
@@ -19,10 +18,6 @@ import (
 const (
 	httpUrl       = "/mixer"
 	urlParamQuery = "q"
-)
-
-var (
-	htmlTemplate = template.Must(template.ParseFiles("templates/mixer.html.tmpl"))
 )
 
 // Mixer is an implementation of the mixer rpc service. It provides global
@@ -148,20 +143,16 @@ func (m *Mixer) handleHttp(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	queryRequest := &pb_almanac.SearchRequest{Query: query[0], Num: 100}
-	response, err := m.Search(context.TODO(), queryRequest)
+	queryResponse, err := m.Search(context.TODO(), queryRequest)
 	if err != nil {
 		fmt.Fprintf(writer, "failed to execute query: %v", err)
 	}
 
-	err = htmlTemplate.ExecuteTemplate(writer, "mixer.html.tmpl", struct {
-		Request  *pb_almanac.SearchRequest
-		Response *pb_almanac.SearchResponse
-	}{queryRequest, response})
+	pageData := &almHttp.MixerData{queryRequest, queryResponse}
+	err = pageData.Render(writer)
 	if err != nil {
-		fmt.Fprintf(writer, "failed to render: %v", err)
+		fmt.Fprintf(writer, "failed to render mixer page: %v", err)
 	}
-
-	log.Printf("rendered\n")
 }
 
 type partialResult struct {
