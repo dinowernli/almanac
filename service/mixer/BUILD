@@ -8,6 +8,7 @@ go_library(
     ),
     visibility = ["//visibility:public"],
     deps = [
+        "//http:go_default_library",
         "//index:go_default_library",
         "//proto:go_default_library",
         "//service/discovery:go_default_library",

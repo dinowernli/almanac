@@ -2,8 +2,10 @@ package mixer
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 
+	almHttp "dinowernli.me/almanac/http"
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/service/discovery"
 	"dinowernli.me/almanac/storage"
@@ -11,6 +13,11 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+)
+
+const (
+	httpUrl       = "/mixer"
+	urlParamQuery = "q"
 )
 
 // Mixer is an implementation of the mixer rpc service. It provides global
@@ -23,6 +30,11 @@ type Mixer struct {
 // New returns a new mixer backed by the supplied storage.
 func New(storage *storage.Storage, discovery *discovery.Discovery) *Mixer {
 	return &Mixer{storage: storage, discovery: discovery}
+}
+
+// RegisterHttp registers a page on the supplied server, used for executing searches.
+func (m *Mixer) RegisterHttp(server *http.ServeMux) {
+	server.HandleFunc(httpUrl, m.handleHttp)
 }
 
 func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
@@ -120,6 +132,27 @@ func (m *Mixer) searchAppender(ctx context.Context, appender pb_almanac.Appender
 		return
 	}
 	resultChan <- &partialResult{entries: response.Entries}
+}
+
+// handleHttp serves a web page which can be used to execute queries on this mixer.
+func (m *Mixer) handleHttp(writer http.ResponseWriter, request *http.Request) {
+	query, ok := request.URL.Query()[urlParamQuery]
+	if !ok || len(query) != 1 {
+		fmt.Fprintf(writer, "please pass exactly one query")
+		return
+	}
+
+	queryRequest := &pb_almanac.SearchRequest{Query: query[0], Num: 100}
+	queryResponse, err := m.Search(context.TODO(), queryRequest)
+	if err != nil {
+		fmt.Fprintf(writer, "failed to execute query: %v", err)
+	}
+
+	pageData := &almHttp.MixerData{queryRequest, queryResponse}
+	err = pageData.Render(writer)
+	if err != nil {
+		fmt.Fprintf(writer, "failed to render mixer page: %v", err)
+	}
 }
 
 type partialResult struct {

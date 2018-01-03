@@ -1,0 +1,48 @@
+<!doctype html>
+<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+
+<title>Mixer</title>
+<style>
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+.query {
+  padding: 10px;
+  margin: 20px;
+  border: 1px solid #ccc;
+  font-size: 20px;
+  display: block;
+  max-width: 400px;
+}
+
+.results {
+  margin: 20px;
+  font-size: 18px;
+}
+
+.result {
+  border-bottom: 1px solid #ccc;
+}
+
+
+.timestamp::after {
+  content: ":";
+}
+
+.message {
+  font-family: "monospace";
+}
+</style>
+<body>
+  <code class="query">{{ .Request }}</code>
+  <div class="results">
+    {{ range .Response.Entries }}
+      <div class="result">
+        <span class="timestamp">{{ .TimestampMs }}</span>
+        <span class="message">{{ .EntryJson }}</span>
+      </div>
+    {{ end }}
+  </div>
+</body>
