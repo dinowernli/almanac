@@ -1,14 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/context"
 )
 
+const (
+	entriesPerChunk = 10 // The max number of entries in a single chunk.
+	numAppenders    = 5  // The number of appenders in the system.
+	appenderFanout  = 2  // The number of appender each ingester talks to.
+
+	httpPort     = 12345
+	grpcBasePort = 51000
+)
+
 func main() {
-	// TODO(dino): Move fixture creation out of test code.
-	fixture, err := createFixture()
+	cluster, err := createCluster(grpcBasePort, numAppenders, entriesPerChunk, appenderFanout)
 	if err != nil {
 		panic(err)
 	}
@@ -23,18 +32,18 @@ func main() {
 		panic(err)
 	}
 
-	_, err = fixture.ingester.Ingest(context.Background(), ingestRequest1)
+	_, err = cluster.ingester.Ingest(context.Background(), ingestRequest1)
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = fixture.ingester.Ingest(context.Background(), ingestRequest2)
+	_, err = cluster.ingester.Ingest(context.Background(), ingestRequest2)
 	if err != nil {
 		panic(err)
 	}
 
 	mux := http.NewServeMux()
-	fixture.mixer.RegisterHttp(mux)
+	cluster.mixer.RegisterHttp(mux)
 
-	http.ListenAndServe(":12345", mux)
+	http.ListenAndServe(fmt.Sprintf(":%d", httpPort), mux)
 }
