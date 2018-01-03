@@ -158,8 +158,8 @@ func createTestCluster(t *testing.T) *localCluster {
 	return c
 }
 
-func appendRequest(id string, entry interface{}, timestampMs int64) (*pb_almanac.AppendRequest, error) {
-	fooJson, err := json.Marshal(entry)
+func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {
+	fooJson, err := json.Marshal(&entry{Message: message})
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal entry to json: %v", err)
 	}
