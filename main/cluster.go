@@ -102,7 +102,7 @@ func startAppenderServer(appender *appender.Appender, address string) (*grpc.Ser
 	return server, nil
 }
 
-func ingestRequest(e interface{}) (*pb_almanac.IngestRequest, error) {
+func newIngestRequest(e interface{}) (*pb_almanac.IngestRequest, error) {
 	entryJson, err := json.Marshal(e)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal entry to json: %v", err)

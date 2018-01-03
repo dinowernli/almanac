@@ -22,12 +22,12 @@ func main() {
 		panic(err)
 	}
 
-	ingestRequest1, err := ingestRequest(&entry{Message: "foo", TimestampMs: 5000})
+	ingestRequest1, err := newIngestRequest(&entry{Message: "foo", TimestampMs: 5000})
 	if err != nil {
 		panic(err)
 	}
 
-	ingestRequest2, err := ingestRequest(&entry{Message: "foo", TimestampMs: 5007})
+	ingestRequest2, err := newIngestRequest(&entry{Message: "foo", TimestampMs: 5007})
 	if err != nil {
 		panic(err)
 	}

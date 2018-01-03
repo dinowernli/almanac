@@ -110,13 +110,13 @@ func TestIngestsEntry(t *testing.T) {
 	defer c.stop()
 
 	// Ship an entry with a predefined timestamp.
-	ingestRequest1, err := ingestRequest(&entry{Message: "foo", TimestampMs: 5000})
+	ingestRequest1, err := newIngestRequest(&entry{Message: "foo", TimestampMs: 5000})
 	assert.NoError(t, err)
 	_, err = c.ingester.Ingest(context.Background(), ingestRequest1)
 	assert.NoError(t, err)
 
 	// Not timestamp for this entry, the ingester should infer it.
-	ingestRequest2, err := ingestRequest(&entry{Message: "foo"})
+	ingestRequest2, err := newIngestRequest(&entry{Message: "foo"})
 	assert.NoError(t, err)
 	_, err = c.ingester.Ingest(context.Background(), ingestRequest2)
 	assert.NoError(t, err)
@@ -139,7 +139,7 @@ func TestQueryRange(t *testing.T) {
 	c := createTestCluster(t)
 	defer c.stop()
 
-	ingestRequest1, err := ingestRequest(&entry{Message: "foo", TimestampMs: 5000})
+	ingestRequest1, err := newIngestRequest(&entry{Message: "foo", TimestampMs: 5000})
 	assert.NoError(t, err)
 	_, err = c.ingester.Ingest(context.Background(), ingestRequest1)
 	assert.NoError(t, err)
