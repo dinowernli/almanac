@@ -2,12 +2,16 @@
 
 [![Build Status](https://travis-ci.org/dinowernli/almanac.svg?branch=master)](https://travis-ci.org/dinowernli/almanac)
 
-A distributed system which ingests, stores, and queries logs.
+A distributed log storage and serving system.
 
 Design goals:
 * Easy to run using cloud providers for the machines (e.g., GCE) and storage (e.g., GCS).
 * Does not require looking after a resilient and fault-tolerant storage system.
 * Simple cluster management because the system uses disk and memory solely for caching.
+
+## Design
+
+TODO(dino) link to doc.
 
 ## Building and running
 
