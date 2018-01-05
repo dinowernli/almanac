@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	almHttp "dinowernli.me/almanac/http"
 	pb_almanac "dinowernli.me/almanac/proto"
@@ -16,8 +17,11 @@ import (
 )
 
 const (
-	httpUrl       = "/mixer"
-	urlParamQuery = "q"
+	httpUrl             = "/mixer"
+	urlParamQuery       = "q"
+	urlParamStartMs     = "s"
+	urlParamEndMs       = "e"
+	httpSearchTimeoutMs = 300
 )
 
 // Mixer is an implementation of the mixer rpc service. It provides global
@@ -136,20 +140,31 @@ func (m *Mixer) searchAppender(ctx context.Context, appender pb_almanac.Appender
 
 // handleHttp serves a web page which can be used to execute queries on this mixer.
 func (m *Mixer) handleHttp(writer http.ResponseWriter, request *http.Request) {
-	query, ok := request.URL.Query()[urlParamQuery]
-	if !ok || len(query) != 1 {
-		fmt.Fprintf(writer, "please pass exactly one query")
+	pageData := &almHttp.MixerData{
+		FormQuery:   request.FormValue(urlParamQuery),
+		FormStartMs: request.FormValue(urlParamStartMs),
+		FormEndMs:   request.FormValue(urlParamEndMs),
+	}
+
+	if pageData.FormQuery == "" && pageData.FormStartMs == "" && pageData.FormEndMs == "" {
+		err := pageData.Render(writer)
+		if err != nil {
+			fmt.Fprintf(writer, "failed to render empty mixer page: %v", err)
+		}
 		return
 	}
 
-	queryRequest := &pb_almanac.SearchRequest{Query: query[0], Num: 100}
-	queryResponse, err := m.Search(context.TODO(), queryRequest)
-	if err != nil {
-		fmt.Fprintf(writer, "failed to execute query: %v", err)
+	pageData.Request = &pb_almanac.SearchRequest{
+		Query:   pageData.FormQuery,
+		Num:     100,
+		StartMs: almHttp.ParseTimestamp(pageData.FormStartMs, 0),
+		EndMs:   almHttp.ParseTimestamp(pageData.FormEndMs, 0),
 	}
 
-	pageData := &almHttp.MixerData{queryRequest, queryResponse}
-	err = pageData.Render(writer)
+	ctx, _ := context.WithTimeout(context.Background(), httpSearchTimeoutMs*time.Millisecond)
+	pageData.Response, pageData.Error = m.Search(ctx, pageData.Request)
+
+	err := pageData.Render(writer)
 	if err != nil {
 		fmt.Fprintf(writer, "failed to render mixer page: %v", err)
 	}
