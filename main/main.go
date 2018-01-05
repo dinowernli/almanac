@@ -44,6 +44,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	cluster.mixer.RegisterHttp(mux)
+	cluster.ingester.RegisterHttp(mux)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", httpPort), mux)
 }

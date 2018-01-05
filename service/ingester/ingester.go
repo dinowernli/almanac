@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"time"
 
+	almHttp "dinowernli.me/almanac/http"
 	pb_almanac "dinowernli.me/almanac/proto"
 	dc "dinowernli.me/almanac/service/discovery"
 
@@ -15,6 +17,10 @@ import (
 )
 
 const (
+	httpUrl             = "/ingester"
+	httpIngestTimeoutMs = 300
+	urlParamContent     = "c"
+
 	timestampField = "timestamp_ms"
 	nanosPerMilli  = 1000000
 )
@@ -38,6 +44,11 @@ func New(discovery *dc.Discovery, appenderFanout int) (*Ingester, error) {
 		discovery:      discovery,
 		appenderFanout: appenderFanout,
 	}, nil
+}
+
+// RegisterHttp registers a page on the supplied server, used for ingesting entries.
+func (i *Ingester) RegisterHttp(server *http.ServeMux) {
+	server.HandleFunc(httpUrl, i.handleHttp)
 }
 
 func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest) (*pb_almanac.IngestResponse, error) {
@@ -86,6 +97,23 @@ func (i *Ingester) selectAppenders() ([]pb_almanac.AppenderClient, error) {
 	// Shuffle the first time so that different ingesters use different subsets of appenders.
 
 	return allAppenders[0:i.appenderFanout], nil
+}
+
+// handleHttp serves a web page which can be used to ingest entries on this ingester.
+func (i *Ingester) handleHttp(writer http.ResponseWriter, request *http.Request) {
+	pageData := &almHttp.IngesterData{FormContent: request.FormValue(urlParamContent)}
+	if pageData.FormContent != "" {
+		ctx, _ := context.WithTimeout(context.Background(), httpIngestTimeoutMs*time.Millisecond)
+		_, pageData.Error = i.Ingest(ctx, &pb_almanac.IngestRequest{EntryJson: pageData.FormContent})
+		if pageData.Error == nil {
+			pageData.Result = "Successfully ingested entry"
+		}
+	}
+
+	err := pageData.Render(writer)
+	if err != nil {
+		fmt.Fprintf(writer, "failed to render ingester page: %v", err)
+	}
 }
 
 // extractEntry takes an incoming string and construct a LogEntry proto from
