@@ -10,12 +10,33 @@ import (
 )
 
 const (
-	mixerHtmlTemplate = "mixer.html.tmpl"
+	ingesterHtmlTemplate = "ingester.html.tmpl"
+	mixerHtmlTemplate    = "mixer.html.tmpl"
 )
 
 var (
-	htmlTemplates = template.Must(template.ParseFiles("http/templates/mixer.html.tmpl"))
+	htmlTemplates = template.Must(template.ParseFiles(
+		"http/templates/ingester.html.tmpl",
+		"http/templates/mixer.html.tmpl",
+	))
 )
+
+// IngesterData holds the data required to render the ingester page.
+type IngesterData struct {
+	FormContent string
+	Error       error
+	Result      string
+}
+
+// Render renders the template into the supplied writer using the data
+// available in this instance.
+func (d *IngesterData) Render(writer io.Writer) error {
+	err := htmlTemplates.ExecuteTemplate(writer, ingesterHtmlTemplate, d)
+	if err != nil {
+		return fmt.Errorf("unable to render template %s: %v", ingesterHtmlTemplate, err)
+	}
+	return nil
+}
 
 // MixerData holds the data required to render the mixer page.
 type MixerData struct {
