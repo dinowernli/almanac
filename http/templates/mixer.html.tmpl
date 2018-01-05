@@ -8,9 +8,18 @@ body {
   font-family: 'Roboto', sans-serif;
 }
 
-.query {
-  padding: 10px;
+.container {
+  padding-left: 10px;
   margin: 20px;
+}
+
+.header {
+  padding-bottom: 10px;
+  padding-top: 10px;
+  font-size: 25px;
+}
+
+.query {
   border: 1px solid #ccc;
   font-size: 20px;
   display: block;
@@ -18,14 +27,13 @@ body {
 }
 
 .results {
-  margin: 20px;
+  padding-bottom: 20px;
   font-size: 18px;
 }
 
 .result {
   border-bottom: 1px solid #ccc;
 }
-
 
 .timestamp::after {
   content: ":";
@@ -34,15 +42,49 @@ body {
 .message {
   font-family: "monospace";
 }
+
+.search {
+  padding-bottom: 20px;
+  font-size: 15px;
+}
+
 </style>
 <body>
-  <code class="query">{{ .Request }}</code>
-  <div class="results">
-    {{ range .Response.Entries }}
-      <div class="result">
-        <span class="timestamp">{{ .TimestampMs }}</span>
-        <span class="message">{{ .EntryJson }}</span>
+  <div class="container">
+    <div class="search">
+      <div class="header">Search</div>
+
+      <form action="/mixer">
+        Time range: <input type="text" name="s" value={{.FormStartMs}}> - <input type="text" name="e" value={{.FormEndMs}}> <br/>
+        Query: <input type="text" name="q" value={{.FormQuery}}> <input type="submit" value="Search">
+      </form>
+    </div>
+
+    {{ if .Error }}
+      <div class="error">
+        <div class="header">Error</div>
+        <pre>{{.Error}}</pre>
       </div>
+    {{ end }}
+
+    {{ if .Response }}
+    <div class="results">
+      <div class="header">Results</div>
+
+      {{ range .Response.Entries }}
+        <div class="result">
+          <span class="timestamp">{{ .TimestampMs }}</span>
+          <span class="message">{{ .EntryJson }}</span>
+        </div>
+      {{ end }}
+    </div>
+    {{ end }}
+
+    {{ if .Request }}
+    <div class="debug">
+      <div class="header">Query</div>
+      <code class="query">{{ .Request }}</code>
+    </div>
     {{ end }}
   </div>
 </body>
