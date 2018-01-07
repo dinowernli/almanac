@@ -70,3 +70,9 @@ go_repository(
     importpath = "github.com/pmezard/go-difflib",
     tag = "v1.0.0",
 )
+
+go_repository(
+    name = "com_github_sirupsen_logrus",
+    importpath = "github.com/Sirupsen/logrus",
+    tag = "v0.11.0",
+)

@@ -12,6 +12,7 @@ import (
 	mx "dinowernli.me/almanac/service/mixer"
 	st "dinowernli.me/almanac/storage"
 
+	"github.com/Sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -35,7 +36,7 @@ type localCluster struct {
 }
 
 // createCluster sets up a test cluster, including all services required to run the system.
-func createCluster(startPort int, numAppenders int, entriesPerChunk int, appenderFanout int) (*localCluster, error) {
+func createCluster(logger *logrus.Logger, startPort int, numAppenders int, entriesPerChunk int, appenderFanout int) (*localCluster, error) {
 	nextPort := startPort
 
 	storage := st.NewInMemoryStorage()
@@ -76,7 +77,7 @@ func createCluster(startPort int, numAppenders int, entriesPerChunk int, appende
 		ingester:  ingester,
 		storage:   storage,
 		discovery: discovery,
-		mixer:     mx.New(storage, discovery),
+		mixer:     mx.New(logger, storage, discovery),
 		servers:   servers,
 	}, nil
 }
