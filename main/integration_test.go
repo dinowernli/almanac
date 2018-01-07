@@ -7,6 +7,7 @@ import (
 
 	pb_almanac "dinowernli.me/almanac/proto"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 )
@@ -153,7 +154,7 @@ func TestQueryRange(t *testing.T) {
 }
 
 func createTestCluster(t *testing.T) *localCluster {
-	c, err := createCluster(grpcBasePort, numAppenders, entriesPerChunk, appenderFanout)
+	c, err := createCluster(logrus.New(), grpcBasePort, numAppenders, entriesPerChunk, appenderFanout)
 	assert.NoError(t, err)
 	return c
 }

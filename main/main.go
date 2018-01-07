@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -17,7 +19,10 @@ const (
 )
 
 func main() {
-	cluster, err := createCluster(grpcBasePort, numAppenders, entriesPerChunk, appenderFanout)
+	logger := logrus.New()
+	logger.Out = os.Stderr
+
+	cluster, err := createCluster(logger, grpcBasePort, numAppenders, entriesPerChunk, appenderFanout)
 	if err != nil {
 		panic(err)
 	}

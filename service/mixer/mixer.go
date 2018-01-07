@@ -11,6 +11,7 @@ import (
 	"dinowernli.me/almanac/service/discovery"
 	"dinowernli.me/almanac/storage"
 
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,13 +28,14 @@ const (
 // Mixer is an implementation of the mixer rpc service. It provides global
 // search functionality across the entire system.
 type Mixer struct {
+	logger    *logrus.Logger
 	storage   *storage.Storage
 	discovery *discovery.Discovery
 }
 
 // New returns a new mixer backed by the supplied storage.
-func New(storage *storage.Storage, discovery *discovery.Discovery) *Mixer {
-	return &Mixer{storage: storage, discovery: discovery}
+func New(logger *logrus.Logger, storage *storage.Storage, discovery *discovery.Discovery) *Mixer {
+	return &Mixer{logger: logger, storage: storage, discovery: discovery}
 }
 
 // RegisterHttp registers a page on the supplied server, used for executing searches.
@@ -101,6 +103,7 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 		}
 	}
 
+	m.logger.Infof("Handled search request with %d results", len(result))
 	return &pb_almanac.SearchResponse{Entries: result}, nil
 }
 
