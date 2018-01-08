@@ -23,6 +23,13 @@ type entry struct {
 	TimestampMs int64  `json:"timestamp_ms"`
 }
 
+// config holds a few configurable values defining the behavior of the system.
+type config struct {
+	smallChunkMaxEntries int
+	smallChunkSpreadMs   int64
+	smallChunkMaxAgeMs   int64
+}
+
 // localCluster holds a test setup ready to use for testing.
 type localCluster struct {
 	mixer    *mx.Mixer
@@ -36,7 +43,7 @@ type localCluster struct {
 }
 
 // createCluster sets up a test cluster, including all services required to run the system.
-func createCluster(logger *logrus.Logger, startPort int, numAppenders int, entriesPerChunk int, appenderFanout int) (*localCluster, error) {
+func createCluster(logger *logrus.Logger, config *config, startPort int, numAppenders int, appenderFanout int) (*localCluster, error) {
 	nextPort := startPort
 
 	storage := st.NewInMemoryStorage()
@@ -44,7 +51,7 @@ func createCluster(logger *logrus.Logger, startPort int, numAppenders int, entri
 	appenders := []*appender.Appender{}
 	servers := []*grpc.Server{}
 	for i := 0; i < numAppenders; i++ {
-		appender, err := appender.New(logger, storage, entriesPerChunk)
+		appender, err := appender.New(logger, storage, config.smallChunkMaxEntries, config.smallChunkSpreadMs, config.smallChunkMaxAgeMs)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create appender %d: %v", i, err)
 		}

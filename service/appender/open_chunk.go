@@ -3,12 +3,16 @@ package appender
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"sync"
 	"time"
 
 	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
+	"dinowernli.me/almanac/storage"
+
+	"golang.org/x/net/context"
 )
 
 // openChunk holds the data for a chunk under construction.
@@ -38,11 +42,10 @@ func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64,
 	if err != nil {
 		return nil, fmt.Errorf("unable to create index: %v", err)
 	}
-
 	result := &openChunk{
 		entries: map[string]*pb_almanac.LogEntry{},
 		index:   index,
-		chunkId: newChunkId(entry.TimestampMs),
+		chunkId: newChunkId(),
 
 		closed:      false,
 		closeTimer:  nil,
@@ -54,13 +57,28 @@ func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64,
 		maxOpenTimeMs: maxOpenTimeMs,
 	}
 
+	// Add the first entry.
 	added, err := result.tryAdd(entry)
 	if err != nil {
-		return nil, fmt.Errorf("unable to add first entry: %v", err)
+		return nil, fmt.Errorf("unable to add first entry to chunk: %v", err)
 	}
+	if !added {
+		// Indicates a programming error. The first addition should always go through.
+		return nil, fmt.Errorf("empty chunk rejected entry")
+	}
+
+	// Make sure we respect the maximum lifetime of the open chunk.
 	result.closeTimer = time.AfterFunc(time.Duration(maxOpenTimeMs)*time.Millisecond, result.close)
 
 	return result, nil
+}
+
+// search executes a search on the in-memory entries and return the matching results
+// (in arbitrary order).
+func (c *openChunk) search(ctx context.Context, request *pb_almanac.SearchRequest) ([]*pb_almanac.LogEntry, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return storage.Search(ctx, c.index, c.entries, request.Query, request.Num, request.StartMs, request.EndMs)
 }
 
 // tryAdd attempts to add the supplied entry to the chunk.
@@ -107,6 +125,11 @@ func (c *openChunk) tryAdd(entry *pb_almanac.LogEntry) (bool, error) {
 	c.chunkId.StartMs = newStartMs
 	c.chunkId.EndMs = newEndMs
 
+	// Check if this chunk needs to get closed.
+	if len(c.entries) >= c.maxEntries {
+		go c.close()
+	}
+
 	return true, nil
 }
 
@@ -137,14 +160,15 @@ func (c *openChunk) toProto() (*pb_almanac.Chunk, error) {
 		return nil, fmt.Errorf("must only call toProto() after closing")
 	}
 
-	indexProto, err := index.Serialize(a.index)
+	indexProto, err := index.Serialize(c.index)
 	if err != nil {
 		return nil, fmt.Errorf("unable to serialize index: %v", err)
 	}
-	a.index.Close()
+	c.index.Close()
 
+	// TODO(dino): Currently not clear whether these need to be sorted.
 	entries := []*pb_almanac.LogEntry{}
-	for _, e := range a.entries {
+	for _, e := range c.entries {
 		entries = append(entries, e)
 	}
 
@@ -157,11 +181,11 @@ func (c *openChunk) toProto() (*pb_almanac.Chunk, error) {
 
 // newChunkId creates a new chunk id proto, starting out with the supplied
 // timestamp.
-func newChunkId(timestampMs int64) *pb_almanac.ChunkId {
+func newChunkId() *pb_almanac.ChunkId {
 	return &pb_almanac.ChunkId{
 		Uid:     randomString(chunkUidLength),
-		StartMs: timestampMs,
-		EndMs:   timestampMs,
+		StartMs: math.MaxInt64,
+		EndMs:   math.MinInt64,
 	}
 }
 
