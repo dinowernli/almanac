@@ -3,8 +3,6 @@ package appender
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-	"math/rand"
 	"sync"
 
 	"dinowernli.me/almanac/index"
@@ -33,9 +31,12 @@ var (
 type Appender struct {
 	logger *logrus.Logger
 
-	entries     map[string]*pb_almanac.LogEntry
-	index       *index.Index
-	chunkId     *pb_almanac.ChunkId
+	entries map[string]*pb_almanac.LogEntry
+	index   *index.Index
+	chunkId *pb_almanac.ChunkId
+
+	openChunks []*openChunk
+
 	appendMutex *sync.Mutex
 
 	storage            *storage.Storage
@@ -54,10 +55,13 @@ func New(logger *logrus.Logger, storage *storage.Storage, maxEntriesPerChunk int
 	}
 
 	return &Appender{
-		logger:             logger,
-		entries:            map[string]*pb_almanac.LogEntry{},
-		index:              index,
-		chunkId:            newEmptyChunkId(),
+		logger: logger,
+
+		// TODO(dino): Remove these.
+		entries: map[string]*pb_almanac.LogEntry{},
+		index:   index,
+		chunkId: newChunkId(int64(3434)),
+
 		appendMutex:        &sync.Mutex{},
 		storage:            storage,
 		maxEntriesPerChunk: maxEntriesPerChunk,
@@ -164,7 +168,7 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 		}
 		a.index = index
 		a.entries = map[string]*pb_almanac.LogEntry{}
-		a.chunkId = newEmptyChunkId()
+		a.chunkId = newChunkId(int64(3434))
 	}
 
 	logger.Infof("Handled")
@@ -196,26 +200,4 @@ func (a *Appender) storeChunk() error {
 		return fmt.Errorf("unable to store chunk %v: %v", chunkProto.Id, err)
 	}
 	return nil
-}
-
-func newEmptyChunkId() *pb_almanac.ChunkId {
-	return &pb_almanac.ChunkId{
-		Uid:     randomString(chunkUidLength),
-		StartMs: math.MaxInt64,
-		EndMs:   math.MinInt64,
-	}
-}
-
-// TODO(dino): Deduplicate these methods with appender.go.
-// randomString produces a random string of lower case letters.
-func randomString(num int) string {
-	bytes := make([]byte, num)
-	for i := 0; i < num; i++ {
-		bytes[i] = byte(randomInt(97, 122)) // lowercase letters.
-	}
-	return string(bytes)
-}
-
-func randomInt(min int, max int) int {
-	return min + rand.Intn(max-min)
 }
