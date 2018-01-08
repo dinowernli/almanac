@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"time"
 
 	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
@@ -17,6 +18,7 @@ type openChunk struct {
 	chunkId *pb_almanac.ChunkId
 
 	closed      bool
+	closeTimer  *time.Timer
 	sinkChannel chan *openChunk
 	mutex       *sync.Mutex
 
@@ -44,6 +46,7 @@ func createOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int
 		chunkId: newChunkId(entry.TimestampMs),
 
 		closed:      false,
+		closeTimer:  nil,
 		sinkChannel: sinkChannel,
 		mutex:       &sync.Mutex{},
 
@@ -52,7 +55,7 @@ func createOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int
 		maxOpenTimeMs: maxOpenTimeMs,
 	}
 
-	// TODO(dino): Start timer to close the chunk.
+	result.closeTimer = time.AfterFunc(time.Duration(maxOpenTimeMs)*time.Millisecond, result.close)
 
 	return result, nil
 }
@@ -116,6 +119,7 @@ func (c *openChunk) close() {
 		return
 	}
 
+	c.closeTimer.Stop()
 	c.closed = true
 	c.sinkChannel <- c
 }
