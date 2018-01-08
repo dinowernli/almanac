@@ -11,6 +11,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	dc "dinowernli.me/almanac/service/discovery"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -25,9 +26,14 @@ const (
 	nanosPerMilli  = 1000000
 )
 
+var (
+	ingestField = logrus.Fields{"method": "ingester.Ingest"}
+)
+
 // Ingester is an implementation of the ingester service. It accepts log
 // entries entering the system and fans them out to appenders.
 type Ingester struct {
+	logger         *logrus.Logger
 	discovery      *dc.Discovery
 	appenderFanout int
 }
@@ -35,12 +41,13 @@ type Ingester struct {
 // New returns a new Ingester backed by the supplied service discovery.
 // appenderFanout specifies how many appenders this ingester tries to inform of
 // a new log entry before declaring the entry ingested into the system.
-func New(discovery *dc.Discovery, appenderFanout int) (*Ingester, error) {
+func New(logger *logrus.Logger, discovery *dc.Discovery, appenderFanout int) (*Ingester, error) {
 	if appenderFanout < 1 {
 		return nil, fmt.Errorf("appenderFanout must be at least 1")
 	}
 
 	return &Ingester{
+		logger:         logger,
 		discovery:      discovery,
 		appenderFanout: appenderFanout,
 	}, nil
@@ -52,16 +59,23 @@ func (i *Ingester) RegisterHttp(server *http.ServeMux) {
 }
 
 func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest) (*pb_almanac.IngestResponse, error) {
+	logger := i.logger.WithFields(ingestField)
+
 	// Parse the incoming raw log entry, extracting some structure.
 	entry, err := extractEntry(request.EntryJson)
 	if err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "unable to extract log entry from json: %v", err)
+		err := grpc.Errorf(codes.InvalidArgument, "unable to extract log entry from json: %v", err)
+		i.logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
+	logger = logger.WithFields(logrus.Fields{"entry": entry.Id})
 
 	// Send an append request to a select bunch of appenders.
 	appenders, err := i.selectAppenders()
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to select appenders: %v", err)
+		err := grpc.Errorf(codes.Internal, "unable to select appenders: %v", err)
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	appendRequest := &pb_almanac.AppendRequest{Entry: entry}
@@ -78,10 +92,13 @@ func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest
 	for i := 0; i < len(appenders); i++ {
 		err := <-resultChan
 		if err != nil {
-			return nil, grpc.Errorf(codes.Internal, "unable to send append request: %v", err)
+			err := grpc.Errorf(codes.Internal, "unable to send append request: %v", err)
+			logger.WithError(err).Warnf("Failed")
+			return nil, err
 		}
 	}
 
+	logger.Infof("Handled")
 	return &pb_almanac.IngestResponse{}, nil
 }
 

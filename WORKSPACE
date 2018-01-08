@@ -73,6 +73,6 @@ go_repository(
 
 go_repository(
     name = "com_github_sirupsen_logrus",
-    importpath = "github.com/Sirupsen/logrus",
+    importpath = "github.com/sirupsen/logrus",
     tag = "v0.11.0",
 )
