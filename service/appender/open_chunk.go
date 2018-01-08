@@ -27,14 +27,13 @@ type openChunk struct {
 	maxOpenTimeMs int64
 }
 
-// createOpenChunk creates a new openChunk instance containing the supplied
-// log entry.
+// newOpenChunk creates a new openChunk instance containing the supplied log entry.
 //
 // - maxEntries is the maximum number of entries in this chunk before it gets closed.
 // - maxSpreadMs is the maximum difference between the smallest and largest timestamp of entries in this chunk.
 // - maxOpenTimeMs is a maximum duration for which the chunk will stay open.
 // - sinkChannel is a channel the open chunk gets sent into once it is closed.
-func createOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64, maxOpenTimeMs int64, sinkChannel chan *openChunk) (*openChunk, error) {
+func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64, maxOpenTimeMs int64, sinkChannel chan *openChunk) (*openChunk, error) {
 	index, err := index.NewIndex()
 	if err != nil {
 		return nil, fmt.Errorf("unable to create index: %v", err)
@@ -55,6 +54,10 @@ func createOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int
 		maxOpenTimeMs: maxOpenTimeMs,
 	}
 
+	added, err := result.tryAdd(entry)
+	if err != nil {
+		return nil, fmt.Errorf("unable to add first entry: %v", err)
+	}
 	result.closeTimer = time.AfterFunc(time.Duration(maxOpenTimeMs)*time.Millisecond, result.close)
 
 	return result, nil
@@ -122,6 +125,34 @@ func (c *openChunk) close() {
 	c.closeTimer.Stop()
 	c.closed = true
 	c.sinkChannel <- c
+}
+
+// toProto turns this instance into a chunk proto. This must only be called
+// after closing this openChunk.
+func (c *openChunk) toProto() (*pb_almanac.Chunk, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if !c.closed {
+		return nil, fmt.Errorf("must only call toProto() after closing")
+	}
+
+	indexProto, err := index.Serialize(a.index)
+	if err != nil {
+		return nil, fmt.Errorf("unable to serialize index: %v", err)
+	}
+	a.index.Close()
+
+	entries := []*pb_almanac.LogEntry{}
+	for _, e := range a.entries {
+		entries = append(entries, e)
+	}
+
+	return &pb_almanac.Chunk{
+		Id:      c.chunkId,
+		Entries: entries,
+		Index:   indexProto,
+	}, nil
 }
 
 // newChunkId creates a new chunk id proto, starting out with the supplied
