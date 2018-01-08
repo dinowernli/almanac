@@ -52,7 +52,9 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	appenders := m.discovery.ListAppenders()
 	chunkIds, err := m.storage.ListChunks(request.StartMs, request.EndMs)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to list chunks: %v", err)
+		err := grpc.Errorf(codes.Internal, "unable to list chunks: %v", err)
+		m.logger.WithError(err).Warnf("search failed")
+		return nil, err
 	}
 
 	// Execute all the searches in parallel.
@@ -84,7 +86,9 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	}
 
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "error executing search: %v", err)
+		err := grpc.Errorf(codes.Internal, "error executing search: %v", err)
+		m.logger.WithError(err).Warnf("search failed")
+		return nil, err
 	}
 
 	// Sort all the entries by timestamp and take the first "num" distinct ones.
