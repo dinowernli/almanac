@@ -12,7 +12,7 @@ import (
 	mx "dinowernli.me/almanac/service/mixer"
 	st "dinowernli.me/almanac/storage"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -44,7 +44,7 @@ func createCluster(logger *logrus.Logger, startPort int, numAppenders int, entri
 	appenders := []*appender.Appender{}
 	servers := []*grpc.Server{}
 	for i := 0; i < numAppenders; i++ {
-		appender, err := appender.New(storage, entriesPerChunk)
+		appender, err := appender.New(logger, storage, entriesPerChunk)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create appender %d: %v", i, err)
 		}
@@ -67,7 +67,7 @@ func createCluster(logger *logrus.Logger, startPort int, numAppenders int, entri
 		return nil, fmt.Errorf("unable to create discovery: %v", err)
 	}
 
-	ingester, err := in.New(discovery, appenderFanout)
+	ingester, err := in.New(logger, discovery, appenderFanout)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create ingester: %v", err)
 	}

@@ -11,7 +11,7 @@ import (
 	"dinowernli.me/almanac/service/discovery"
 	"dinowernli.me/almanac/storage"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -23,6 +23,10 @@ const (
 	urlParamStartMs     = "s"
 	urlParamEndMs       = "e"
 	httpSearchTimeoutMs = 300
+)
+
+var (
+	searchField = logrus.Fields{"method": "mixer.Search"}
 )
 
 // Mixer is an implementation of the mixer rpc service. It provides global
@@ -44,15 +48,21 @@ func (m *Mixer) RegisterHttp(server *http.ServeMux) {
 }
 
 func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
+	logger := m.logger.WithFields(searchField)
+
 	if request.StartMs != 0 && request.EndMs != 0 && request.StartMs > request.EndMs {
-		return nil, grpc.Errorf(codes.InvalidArgument, "cannot query, start(%d) is greater than end (%d)", request.StartMs, request.EndMs)
+		err := grpc.Errorf(codes.InvalidArgument, "cannot query, start(%d) is greater than end (%d)", request.StartMs, request.EndMs)
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	// Do some prep for the parallel searches.
 	appenders := m.discovery.ListAppenders()
 	chunkIds, err := m.storage.ListChunks(request.StartMs, request.EndMs)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to list chunks: %v", err)
+		err := grpc.Errorf(codes.Internal, "unable to list chunks: %v", err)
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	// Execute all the searches in parallel.
@@ -84,7 +94,9 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	}
 
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "error executing search: %v", err)
+		err := grpc.Errorf(codes.Internal, "error executing search: %v", err)
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	// Sort all the entries by timestamp and take the first "num" distinct ones.
@@ -102,8 +114,9 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 			break
 		}
 	}
+	logger = logger.WithFields(logrus.Fields{"hits": len(result)})
 
-	m.logger.Infof("Handled search request with %d results", len(result))
+	logger.Infof("Handled")
 	return &pb_almanac.SearchResponse{Entries: result}, nil
 }
 

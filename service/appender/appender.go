@@ -11,6 +11,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -20,11 +21,18 @@ const (
 	chunkUidLength = 5
 )
 
+var (
+	appendField = logrus.Fields{"method": "appender.Append"}
+	searchField = logrus.Fields{"method": "appender.Search"}
+)
+
 // Appender keeps track of a single open chunk under construction at a time and
 // periodically decides that the open chunk is complete, at which point the
 // appender writes the chunk to storage. The appender also knows how to answer
 // search requests for the currently open chunk.
 type Appender struct {
+	logger *logrus.Logger
+
 	entries     map[string]*pb_almanac.LogEntry
 	index       *index.Index
 	chunkId     *pb_almanac.ChunkId
@@ -35,7 +43,7 @@ type Appender struct {
 }
 
 // New returns a new appender backed by the supplied storage.
-func New(storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
+func New(logger *logrus.Logger, storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
 	if maxEntriesPerChunk < 1 {
 		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxEntriesPerChunk)
 	}
@@ -46,6 +54,7 @@ func New(storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
 	}
 
 	return &Appender{
+		logger:             logger,
 		entries:            map[string]*pb_almanac.LogEntry{},
 		index:              index,
 		chunkId:            newEmptyChunkId(),
@@ -56,19 +65,25 @@ func New(storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
 }
 
 func (a *Appender) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
+	logger := a.logger.WithFields(searchField)
+
 	a.appendMutex.Lock()
 	defer a.appendMutex.Unlock()
 
 	ids, err := a.index.Search(ctx, request.Query, request.Num)
 	if err != nil {
-		return nil, fmt.Errorf("unable to search index: %v", err)
+		err := fmt.Errorf("unable to search index: %v", err)
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	entries := []*pb_almanac.LogEntry{}
 	for _, id := range ids {
 		entry, ok := a.entries[id]
 		if !ok {
-			return nil, fmt.Errorf("could not locate hit %s", id)
+			err := fmt.Errorf("could not locate hit %s", id)
+			logger.WithError(err).Warnf("Failed")
+			return nil, err
 		}
 
 		if request.StartMs != 0 && entry.TimestampMs < request.StartMs {
@@ -80,20 +95,28 @@ func (a *Appender) Search(ctx context.Context, request *pb_almanac.SearchRequest
 		entries = append(entries, entry)
 	}
 
+	logger.Infof("Handled")
 	return &pb_almanac.SearchResponse{Entries: entries}, nil
 }
 
 func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest) (*pb_almanac.AppendResponse, error) {
+	logger := a.logger.WithFields(appendField)
+
 	// Perform some validation of the request.
 	logEntry := request.GetEntry()
 	if logEntry == nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "no entry supplied")
+		err := grpc.Errorf(codes.InvalidArgument, "no entry supplied")
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	entryId := logEntry.GetId()
 	if entryId == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "no id supplied")
+		err := grpc.Errorf(codes.InvalidArgument, "no id supplied")
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
+	logger = logger.WithFields(logrus.Fields{"entry": entryId})
 
 	// Update the data structures corresponding to the open chunk.
 	a.appendMutex.Lock()
@@ -102,12 +125,16 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 	var rawEntry interface{}
 	err := json.Unmarshal([]byte(logEntry.EntryJson), &rawEntry)
 	if err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse raw json: %v", err)
+		err := grpc.Errorf(codes.InvalidArgument, "unable to parse raw json: %v", err)
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	err = a.index.Index(entryId, rawEntry)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "unable to index raw json entry: %v", err)
+		err := grpc.Errorf(codes.Internal, "unable to index raw json entry: %v", err)
+		logger.WithError(err).Warnf("Failed")
+		return nil, err
 	}
 
 	a.entries[entryId] = request.Entry
@@ -123,19 +150,24 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 	if len(a.entries) >= a.maxEntriesPerChunk {
 		err := a.storeChunk()
 		if err != nil {
-			return nil, grpc.Errorf(codes.Internal, "unable to store chunk: %v", err)
+			err := grpc.Errorf(codes.Internal, "unable to store chunk: %v", err)
+			logger.WithError(err).Warnf("Failed")
+			return nil, err
 		}
 
 		index, err := index.NewIndex()
 		if err != nil {
 			// TODO(dino): If this happens, stop responding to requests.
-			return nil, grpc.Errorf(codes.Internal, "unable to create new index: %v", err)
+			err := grpc.Errorf(codes.Internal, "unable to create new index: %v", err)
+			logger.WithError(err).Warnf("Failed")
+			return nil, err
 		}
 		a.index = index
 		a.entries = map[string]*pb_almanac.LogEntry{}
 		a.chunkId = newEmptyChunkId()
 	}
 
+	logger.Infof("Handled")
 	return &pb_almanac.AppendResponse{}, nil
 }
 
