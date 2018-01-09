@@ -45,18 +45,25 @@ func (s *Storage) LoadChunk(chunkId string) (*Chunk, error) {
 	return openChunk(chunkId, chunk)
 }
 
-// StoreChunk persists the supplied chunk proto in storage.
-func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) error {
+// StoreChunk persists the supplied chunk proto in storage. Returns the id used
+// to store the chunk.
+func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) (string, error) {
 	chunkId, err := ChunkId(chunkProto.Id)
 	if err != nil {
-		return fmt.Errorf("unable to extract chunk id: %v", err)
+		return "", fmt.Errorf("unable to extract chunk id: %v", err)
 	}
 
 	bytes, err := proto.Marshal(chunkProto)
 	if err != nil {
-		return fmt.Errorf("unable to marshal chunk proto: %v", err)
+		return "", fmt.Errorf("unable to marshal chunk proto: %v", err)
 	}
-	return s.backend.write(fmt.Sprintf("%s%s", chunkPrefix, chunkId), bytes)
+
+	err = s.backend.write(fmt.Sprintf("%s%s", chunkPrefix, chunkId), bytes)
+	if err != nil {
+		return "", fmt.Errorf("unable to write chunk bytes to backend")
+	}
+
+	return chunkId, nil
 }
 
 // NewTempDiskStorage creates a backend backed by a new temporary directory.

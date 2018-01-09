@@ -72,14 +72,25 @@ func openChunk(chunkId string, chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 
 // Search returns all log entries in the chunk matching the supplied query.
 func (c *Chunk) Search(ctx context.Context, query string, num int32, startMs int64, endMs int64) ([]*pb_almanac.LogEntry, error) {
-	ids, err := c.index.Search(ctx, query, num)
+	return Search(ctx, c.index, c.entries, query, num, startMs, endMs)
+}
+
+// Close releases any resources associated with this chunk.
+func (c *Chunk) Close() error {
+	return c.index.Close()
+}
+
+// Search executes a search on a given index and set of entries, returning results
+// in arbitrary order.
+func Search(ctx context.Context, idx *index.Index, entries map[string]*pb_almanac.LogEntry, query string, num int32, startMs int64, endMs int64) ([]*pb_almanac.LogEntry, error) {
+	ids, err := idx.Search(ctx, query, num)
 	if err != nil {
 		return nil, fmt.Errorf("unable to search index: %v", err)
 	}
 
-	entries := []*pb_almanac.LogEntry{}
+	result := []*pb_almanac.LogEntry{}
 	for _, id := range ids {
-		entry, ok := c.entries[id]
+		entry, ok := entries[id]
 		if !ok {
 			return nil, fmt.Errorf("could not locate hit %s", id)
 		}
@@ -90,14 +101,9 @@ func (c *Chunk) Search(ctx context.Context, query string, num int32, startMs int
 		if endMs != 0 && entry.TimestampMs > endMs {
 			continue
 		}
-		entries = append(entries, entry)
+		result = append(result, entry)
 	}
-	return entries, nil
-}
-
-// Close releases any resources associated with this chunk.
-func (c *Chunk) Close() error {
-	return c.index.Close()
+	return result, nil
 }
 
 func (c *Chunk) fetchEntry(id string) (*pb_almanac.LogEntry, error) {

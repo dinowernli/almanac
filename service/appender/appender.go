@@ -1,13 +1,10 @@
 package appender
 
 import (
-	"encoding/json"
 	"fmt"
-	"math"
-	"math/rand"
 	"sync"
+	"time"
 
-	"dinowernli.me/almanac/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
 
@@ -18,7 +15,14 @@ import (
 )
 
 const (
+	// The number of random characters appended to chunk ids to make sure that
+	// chunk ids are globally unique.
 	chunkUidLength = 5
+
+	// The time during which closed chunks are kept in memory even after writing
+	// them out to storage. This should be longer than the typical time it takes
+	// to serve a serach request on a mixer.
+	closedChunkGracePeriodMs = 1000
 )
 
 var (
@@ -31,86 +35,85 @@ var (
 // appender writes the chunk to storage. The appender also knows how to answer
 // search requests for the currently open chunk.
 type Appender struct {
-	logger *logrus.Logger
+	logger  *logrus.Logger
+	storage *storage.Storage
 
-	entries     map[string]*pb_almanac.LogEntry
-	index       *index.Index
-	chunkId     *pb_almanac.ChunkId
-	appendMutex *sync.Mutex
+	openChunks       []*openChunk
+	openChunksMutex  *sync.Mutex
+	closedChunksChan chan *openChunk
 
-	storage            *storage.Storage
-	maxEntriesPerChunk int
+	maxChunkEntries    int
+	maxChunkSpreadMs   int64
+	maxChunkOpenTimeMs int64
 }
 
 // New returns a new appender backed by the supplied storage.
-func New(logger *logrus.Logger, storage *storage.Storage, maxEntriesPerChunk int) (*Appender, error) {
-	if maxEntriesPerChunk < 1 {
-		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxEntriesPerChunk)
+func New(logger *logrus.Logger, storage *storage.Storage, maxChunkEntries int, maxChunkSpreadMs int64, maxChunkOpenTimeMs int64) (*Appender, error) {
+	if maxChunkEntries < 1 {
+		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxChunkEntries)
+	}
+	if maxChunkSpreadMs <= 0 {
+		return nil, fmt.Errorf("must have positive chunk spread, but got: %d", maxChunkSpreadMs)
+	}
+	if maxChunkOpenTimeMs <= 0 {
+		return nil, fmt.Errorf("must have positive max chunk open time, but got: %d", maxChunkOpenTimeMs)
 	}
 
-	index, err := index.NewIndex()
-	if err != nil {
-		return nil, fmt.Errorf("unable to create index: %v", err)
+	result := &Appender{
+		logger:  logger,
+		storage: storage,
+
+		openChunks:       []*openChunk{},
+		openChunksMutex:  &sync.Mutex{},
+		closedChunksChan: make(chan *openChunk),
+
+		maxChunkEntries:    maxChunkEntries,
+		maxChunkSpreadMs:   maxChunkSpreadMs,
+		maxChunkOpenTimeMs: maxChunkOpenTimeMs,
 	}
 
-	return &Appender{
-		logger:             logger,
-		entries:            map[string]*pb_almanac.LogEntry{},
-		index:              index,
-		chunkId:            newEmptyChunkId(),
-		appendMutex:        &sync.Mutex{},
-		storage:            storage,
-		maxEntriesPerChunk: maxEntriesPerChunk,
-	}, nil
+	// Kick of the background goroutine which sends closed chunks to storage.
+	go result.storeClosedChunks()
+
+	return result, nil
 }
 
 func (a *Appender) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {
 	logger := a.logger.WithFields(searchField)
 
-	a.appendMutex.Lock()
-	defer a.appendMutex.Unlock()
+	a.openChunksMutex.Lock()
+	defer a.openChunksMutex.Unlock()
 
-	ids, err := a.index.Search(ctx, request.Query, request.Num)
-	if err != nil {
-		err := fmt.Errorf("unable to search index: %v", err)
-		logger.WithError(err).Warnf("Failed")
-		return nil, err
-	}
-
-	entries := []*pb_almanac.LogEntry{}
-	for _, id := range ids {
-		entry, ok := a.entries[id]
-		if !ok {
-			err := fmt.Errorf("could not locate hit %s", id)
+	results := []*pb_almanac.LogEntry{}
+	for _, chunk := range a.openChunks {
+		entries, err := chunk.search(ctx, request)
+		if err != nil {
+			err := fmt.Errorf("unable to search open chunk: %v", err)
 			logger.WithError(err).Warnf("Failed")
 			return nil, err
 		}
 
-		if request.StartMs != 0 && entry.TimestampMs < request.StartMs {
-			continue
+		for _, e := range entries {
+			results = append(results, e)
 		}
-		if request.EndMs != 0 && entry.TimestampMs > request.EndMs {
-			continue
-		}
-		entries = append(entries, entry)
 	}
 
 	logger.Infof("Handled")
-	return &pb_almanac.SearchResponse{Entries: entries}, nil
+	return &pb_almanac.SearchResponse{Entries: results}, nil
 }
 
 func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest) (*pb_almanac.AppendResponse, error) {
 	logger := a.logger.WithFields(appendField)
 
 	// Perform some validation of the request.
-	logEntry := request.GetEntry()
-	if logEntry == nil {
+	entry := request.GetEntry()
+	if entry == nil {
 		err := grpc.Errorf(codes.InvalidArgument, "no entry supplied")
 		logger.WithError(err).Warnf("Failed")
 		return nil, err
 	}
 
-	entryId := logEntry.GetId()
+	entryId := entry.GetId()
 	if entryId == "" {
 		err := grpc.Errorf(codes.InvalidArgument, "no id supplied")
 		logger.WithError(err).Warnf("Failed")
@@ -118,104 +121,79 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 	}
 	logger = logger.WithFields(logrus.Fields{"entry": entryId})
 
-	// Update the data structures corresponding to the open chunk.
-	a.appendMutex.Lock()
-	defer a.appendMutex.Unlock()
+	a.openChunksMutex.Lock()
+	defer a.openChunksMutex.Unlock()
 
-	var rawEntry interface{}
-	err := json.Unmarshal([]byte(logEntry.EntryJson), &rawEntry)
-	if err != nil {
-		err := grpc.Errorf(codes.InvalidArgument, "unable to parse raw json: %v", err)
-		logger.WithError(err).Warnf("Failed")
-		return nil, err
-	}
-
-	err = a.index.Index(entryId, rawEntry)
-	if err != nil {
-		err := grpc.Errorf(codes.Internal, "unable to index raw json entry: %v", err)
-		logger.WithError(err).Warnf("Failed")
-		return nil, err
-	}
-
-	a.entries[entryId] = request.Entry
-	ts := request.Entry.TimestampMs
-	if ts > a.chunkId.EndMs {
-		a.chunkId.EndMs = ts
-	}
-	if ts < a.chunkId.StartMs {
-		a.chunkId.StartMs = ts
-	}
-
-	// If the open chunk has grown enough, close it up and start a new one.
-	if len(a.entries) >= a.maxEntriesPerChunk {
-		err := a.storeChunk()
+	// Try to find an open chunk which can accept the entry.
+	done := false
+	for _, chunk := range a.openChunks {
+		added, err := chunk.tryAdd(entry)
 		if err != nil {
-			err := grpc.Errorf(codes.Internal, "unable to store chunk: %v", err)
+			err := grpc.Errorf(codes.Internal, "error while adding entry to chunk: %v", err)
 			logger.WithError(err).Warnf("Failed")
 			return nil, err
 		}
 
-		index, err := index.NewIndex()
+		if added {
+			done = true
+			break
+		}
+	}
+
+	// Open a new chunk if necessary.
+	if !done {
+		newChunk, err := newOpenChunk(entry, a.maxChunkEntries, a.maxChunkSpreadMs, a.maxChunkOpenTimeMs, a.closedChunksChan)
 		if err != nil {
-			// TODO(dino): If this happens, stop responding to requests.
-			err := grpc.Errorf(codes.Internal, "unable to create new index: %v", err)
+			err := grpc.Errorf(codes.Internal, "error while creating new chunk: %v", err)
 			logger.WithError(err).Warnf("Failed")
 			return nil, err
 		}
-		a.index = index
-		a.entries = map[string]*pb_almanac.LogEntry{}
-		a.chunkId = newEmptyChunkId()
+		a.openChunks = append(a.openChunks, newChunk)
 	}
 
 	logger.Infof("Handled")
 	return &pb_almanac.AppendResponse{}, nil
 }
 
-// storeChunk takes the currently open chunk, persists it to storage, and starts
-// a new open chunk.
-func (a *Appender) storeChunk() error {
-	indexProto, err := index.Serialize(a.index)
-	if err != nil {
-		return fmt.Errorf("unable to serialize index: %v", err)
-	}
-	a.index.Close()
+// storeClosedChunks takes all the chunk protos sent over the closed chunks
+// channel and writes them to storage. This method blocks and is not expected
+// to return for the lifetime of the appender, so it should be called in a
+// dedicated goroutine.
+func (a *Appender) storeClosedChunks() {
+	for chunk := range a.closedChunksChan {
+		// Write the chunk out to storage.
+		chunkProto, err := chunk.toProto()
+		if err != nil {
+			a.logger.WithError(err).Errorf("Failed to turn chunk into proto: %v", err)
+			continue
+		}
 
-	entries := []*pb_almanac.LogEntry{}
-	for _, e := range a.entries {
-		entries = append(entries, e)
-	}
+		chunkId, err := a.storage.StoreChunk(chunkProto)
+		if err != nil {
+			a.logger.WithError(err).Errorf("Failed to store chunk %v: %v", chunkProto.Id, err)
+		}
 
-	chunkProto := &pb_almanac.Chunk{
-		Id:      a.chunkId,
-		Entries: entries,
-		Index:   indexProto,
-	}
+		// Now, remove it from the appender's list. We do this only after a grace period in order
+		// to make sure that query mixers don't end up in the case where they hit storage *before*
+		// the chunk is written, but hit this appender *after* the chunk is removed from memory.
+		time.AfterFunc(time.Duration(closedChunkGracePeriodMs)*time.Millisecond, func() {
+			a.removeOpenChunk(chunk)
+		})
 
-	err = a.storage.StoreChunk(chunkProto)
-	if err != nil {
-		return fmt.Errorf("unable to store chunk %v: %v", chunkProto.Id, err)
-	}
-	return nil
-}
-
-func newEmptyChunkId() *pb_almanac.ChunkId {
-	return &pb_almanac.ChunkId{
-		Uid:     randomString(chunkUidLength),
-		StartMs: math.MaxInt64,
-		EndMs:   math.MinInt64,
+		a.logger.WithFields(logrus.Fields{"chunkId": chunkId}).Infof("Stored chunk with %d entries", len(chunkProto.Entries))
 	}
 }
 
-// TODO(dino): Deduplicate these methods with appender.go.
-// randomString produces a random string of lower case letters.
-func randomString(num int) string {
-	bytes := make([]byte, num)
-	for i := 0; i < num; i++ {
-		bytes[i] = byte(randomInt(97, 122)) // lowercase letters.
-	}
-	return string(bytes)
-}
+// removeOpenChunk removes the supplied chunk from the list of open chunks.
+func (a *Appender) removeOpenChunk(chunk *openChunk) {
+	a.openChunksMutex.Lock()
+	defer a.openChunksMutex.Unlock()
 
-func randomInt(min int, max int) int {
-	return min + rand.Intn(max-min)
+	newOpenChunks := []*openChunk{}
+	for _, c := range a.openChunks {
+		if c != chunk {
+			newOpenChunks = append(newOpenChunks, c)
+		}
+	}
+	a.openChunks = newOpenChunks
 }

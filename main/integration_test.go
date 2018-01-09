@@ -13,11 +13,16 @@ import (
 )
 
 const (
-	entriesPerChunk = 10 // The max number of entries in a single chunk.
-	numAppenders    = 5  // The number of appenders in the system.
-	appenderFanout  = 2  // The number of appender each ingester talks to.
+	numAppenders   = 5 // The number of appenders in the system.
+	appenderFanout = 2 // The number of appender each ingester talks to.
+)
 
-	grpcBasePort = 51000
+var (
+	testConf = &config{
+		smallChunkMaxEntries: 10,
+		smallChunkSpreadMs:   5000,
+		smallChunkMaxAgeMs:   3000,
+	}
 )
 
 func TestNoEntries(t *testing.T) {
@@ -68,7 +73,7 @@ func TestRoundTripThroughStorage(t *testing.T) {
 
 	// Add multiple chunks worth of entries, try to make sure we have an
 	// open chunk as well.
-	numEntries := 10*entriesPerChunk + 1
+	numEntries := 10*testConf.smallChunkMaxEntries + 1
 	for i := 0; i < numEntries; i++ {
 		request, err := appendRequest(fmt.Sprintf("id-%d", i), "foo", 123)
 		assert.NoError(t, err)
@@ -154,9 +159,18 @@ func TestQueryRange(t *testing.T) {
 }
 
 func createTestCluster(t *testing.T) *localCluster {
-	c, err := createCluster(logrus.New(), grpcBasePort, numAppenders, entriesPerChunk, appenderFanout)
+	c, err := createCluster(logrus.New(), testConf, getAppenderPorts(), appenderFanout)
 	assert.NoError(t, err)
 	return c
+}
+
+func getAppenderPorts() []int {
+	result := []int{}
+	for i := 0; i < numAppenders; i++ {
+		// Let the OS pick a random port.
+		result = append(result, 0)
+	}
+	return result
 }
 
 func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {

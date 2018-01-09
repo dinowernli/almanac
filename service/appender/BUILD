@@ -18,3 +18,13 @@ go_library(
         "@org_golang_x_net//context:go_default_library",
     ],
 )
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = glob(["*_test.go"]),
+    library = ":go_default_library",
+    deps = [
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
