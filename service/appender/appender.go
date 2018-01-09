@@ -167,16 +167,22 @@ func (a *Appender) storeClosedChunks() {
 
 		// Now, remove it from the appender's list. Note that this has to happen after
 		// the storage bit above (otherwise entries could temporarily not show up in searches).
-		a.openChunksMutex.Lock()
-		defer a.openChunksMutex.Unlock()
-		newOpenChunks := []*openChunk{}
-		for _, c := range a.openChunks {
-			if c != chunk {
-				newOpenChunks = append(newOpenChunks, c)
-			}
-		}
-		a.openChunks = newOpenChunks
+		a.removeOpenChunk(chunk)
 
 		a.logger.WithFields(logrus.Fields{"chunkId": chunkId}).Infof("Stored chunk")
 	}
+}
+
+// removeOpenChunk removes the supplied chunk from the list of open chunks.
+func (a *Appender) removeOpenChunk(chunk *openChunk) {
+	a.openChunksMutex.Lock()
+	defer a.openChunksMutex.Unlock()
+
+	newOpenChunks := []*openChunk{}
+	for _, c := range a.openChunks {
+		if c != chunk {
+			newOpenChunks = append(newOpenChunks, c)
+		}
+	}
+	a.openChunks = newOpenChunks
 }
