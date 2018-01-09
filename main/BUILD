@@ -30,7 +30,6 @@ go_test(
         "*_test.go",
         "cluster.go",
     ]),
-    tags = ["exclusive"],  # We use a fixed set of ports.
     deps = [
         "//index:go_default_library",
         "//proto:go_default_library",

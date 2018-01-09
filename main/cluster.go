@@ -43,30 +43,24 @@ type localCluster struct {
 }
 
 // createCluster sets up a test cluster, including all services required to run the system.
-func createCluster(logger *logrus.Logger, config *config, startPort int, numAppenders int, appenderFanout int) (*localCluster, error) {
-	nextPort := startPort
-
+func createCluster(logger *logrus.Logger, config *config, appenderAddresses []string, appenderFanout int) (*localCluster, error) {
 	storage := st.NewInMemoryStorage()
-	appenderAddresses := []string{}
 	appenders := []*appender.Appender{}
 	servers := []*grpc.Server{}
-	for i := 0; i < numAppenders; i++ {
+	for _, address := range appenderAddresses {
 		appender, err := appender.New(logger, storage, config.smallChunkMaxEntries, config.smallChunkSpreadMs, config.smallChunkMaxAgeMs)
 		if err != nil {
-			return nil, fmt.Errorf("unable to create appender %d: %v", i, err)
+			return nil, fmt.Errorf("unable to create appender %s: %v", address, err)
 		}
-
-		address := fmt.Sprintf("localhost:%d", nextPort)
-		nextPort++
 
 		server, err := startAppenderServer(appender, address)
 		if err != nil {
-			return nil, fmt.Errorf("unable to start appender %d: %v", i, err)
+			return nil, fmt.Errorf("unable to start appender %s: %v", address, err)
 		}
 		servers = append(servers, server)
-
-		appenderAddresses = append(appenderAddresses, address)
 		appenders = append(appenders, appender)
+
+		logger.Infof("Started appender at address: %s", address)
 	}
 
 	discovery, err := dc.New(appenderAddresses)

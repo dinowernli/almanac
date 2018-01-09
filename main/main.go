@@ -10,11 +10,8 @@ import (
 )
 
 const (
-	numAppenders   = 5 // The number of appenders in the system.
-	appenderFanout = 2 // The number of appender each ingester talks to.
-
-	httpPort     = 12345
-	grpcBasePort = 51000
+	appenderFanout = 2 // The number of appenders each ingester talks to.
+	httpPort       = 12345
 )
 
 var (
@@ -23,13 +20,21 @@ var (
 		smallChunkSpreadMs:   5000,
 		smallChunkMaxAgeMs:   3000,
 	}
+
+	appenderAddresses = []string{
+		"localhost:51000",
+		"localhost:51001",
+		"localhost:51002",
+		"localhost:51003",
+		"localhost:51004",
+	}
 )
 
 func main() {
 	logger := logrus.New()
 	logger.Out = os.Stderr
 
-	cluster, err := createCluster(logger, conf, grpcBasePort, numAppenders, appenderFanout)
+	cluster, err := createCluster(logger, conf, appenderAddresses, appenderFanout)
 	if err != nil {
 		panic(err)
 	}
@@ -55,8 +60,12 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+
 	cluster.mixer.RegisterHttp(mux)
+	logger.Infof("Started mixer at http://localhost:%d/mixer", httpPort)
+
 	cluster.ingester.RegisterHttp(mux)
+	logger.Infof("Started ingester at http://localhost:%d/ingester", httpPort)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", httpPort), mux)
 }

@@ -15,11 +15,11 @@ import (
 const (
 	numAppenders   = 5 // The number of appenders in the system.
 	appenderFanout = 2 // The number of appender each ingester talks to.
-
-	grpcBasePort = 51000
 )
 
 var (
+	nextPort = 51000
+
 	testConf = &config{
 		smallChunkMaxEntries: 10,
 		smallChunkSpreadMs:   5000,
@@ -161,9 +161,18 @@ func TestQueryRange(t *testing.T) {
 }
 
 func createTestCluster(t *testing.T) *localCluster {
-	c, err := createCluster(logrus.New(), testConf, grpcBasePort, numAppenders, appenderFanout)
+	c, err := createCluster(logrus.New(), testConf, getAppenderAddresses(), appenderFanout)
 	assert.NoError(t, err)
 	return c
+}
+
+func getAppenderAddresses() []string {
+	result := []string{}
+	for i := 0; i < numAppenders; i++ {
+		result = append(result, fmt.Sprintf("localhost:%d", nextPort))
+		nextPort++
+	}
+	return result
 }
 
 func appendRequest(id string, message string, timestampMs int64) (*pb_almanac.AppendRequest, error) {
