@@ -43,22 +43,24 @@ type localCluster struct {
 }
 
 // createCluster sets up a test cluster, including all services required to run the system.
-func createCluster(logger *logrus.Logger, config *config, appenderAddresses []string, appenderFanout int) (*localCluster, error) {
+func createCluster(logger *logrus.Logger, config *config, appenderPorts []int, appenderFanout int) (*localCluster, error) {
 	storage := st.NewInMemoryStorage()
 	appenders := []*appender.Appender{}
 	servers := []*grpc.Server{}
-	for _, address := range appenderAddresses {
+	appenderAddresses := []string{}
+	for _, port := range appenderPorts {
 		appender, err := appender.New(logger, storage, config.smallChunkMaxEntries, config.smallChunkSpreadMs, config.smallChunkMaxAgeMs)
 		if err != nil {
-			return nil, fmt.Errorf("unable to create appender %s: %v", address, err)
+			return nil, fmt.Errorf("unable to create appender %d: %v", port, err)
 		}
 
-		server, err := startAppenderServer(appender, address)
+		server, address, err := startAppenderServer(appender, port)
 		if err != nil {
-			return nil, fmt.Errorf("unable to start appender %s: %v", address, err)
+			return nil, fmt.Errorf("unable to start appender %d: %v", port, err)
 		}
 		servers = append(servers, server)
 		appenders = append(appenders, appender)
+		appenderAddresses = append(appenderAddresses, address)
 
 		logger.Infof("Started appender at address: %s", address)
 	}
@@ -89,10 +91,10 @@ func (c *localCluster) stop() {
 	}
 }
 
-func startAppenderServer(appender *appender.Appender, address string) (*grpc.Server, error) {
-	listen, err := net.Listen("tcp", address)
+func startAppenderServer(appender *appender.Appender, port int) (*grpc.Server, string, error) {
+	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen for address %s: %v", address, err)
+		return nil, "", fmt.Errorf("failed to listen for port %d: %v", port, err)
 	}
 
 	server := grpc.NewServer()
@@ -101,7 +103,7 @@ func startAppenderServer(appender *appender.Appender, address string) (*grpc.Ser
 		server.Serve(listen)
 	}()
 
-	return server, nil
+	return server, listen.Addr().String(), nil
 }
 
 func newIngestRequest(e interface{}) (*pb_almanac.IngestRequest, error) {

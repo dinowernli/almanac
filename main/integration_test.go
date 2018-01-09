@@ -18,8 +18,6 @@ const (
 )
 
 var (
-	nextPort = 51000
-
 	testConf = &config{
 		smallChunkMaxEntries: 10,
 		smallChunkSpreadMs:   5000,
@@ -161,16 +159,16 @@ func TestQueryRange(t *testing.T) {
 }
 
 func createTestCluster(t *testing.T) *localCluster {
-	c, err := createCluster(logrus.New(), testConf, getAppenderAddresses(), appenderFanout)
+	c, err := createCluster(logrus.New(), testConf, getAppenderPorts(), appenderFanout)
 	assert.NoError(t, err)
 	return c
 }
 
-func getAppenderAddresses() []string {
-	result := []string{}
+func getAppenderPorts() []int {
+	result := []int{}
 	for i := 0; i < numAppenders; i++ {
-		result = append(result, fmt.Sprintf("localhost:%d", nextPort))
-		nextPort++
+		// Let the OS pick a random port.
+		result = append(result, 0)
 	}
 	return result
 }

@@ -21,20 +21,14 @@ var (
 		smallChunkMaxAgeMs:   3000,
 	}
 
-	appenderAddresses = []string{
-		"localhost:51000",
-		"localhost:51001",
-		"localhost:51002",
-		"localhost:51003",
-		"localhost:51004",
-	}
+	appenderPorts = []int{5001, 5002, 5003, 5004, 5005}
 )
 
 func main() {
 	logger := logrus.New()
 	logger.Out = os.Stderr
 
-	cluster, err := createCluster(logger, conf, appenderAddresses, appenderFanout)
+	cluster, err := createCluster(logger, conf, appenderPorts, appenderFanout)
 	if err != nil {
 		panic(err)
 	}
