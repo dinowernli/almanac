@@ -147,7 +147,10 @@ func (c *openChunk) close() {
 
 	c.closeTimer.Stop()
 	c.closed = true
-	c.sinkChannel <- c
+
+	go func() {
+		c.sinkChannel <- c
+	}()
 }
 
 // toProto turns this instance into a chunk proto. This must only be called

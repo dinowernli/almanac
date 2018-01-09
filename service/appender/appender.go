@@ -3,6 +3,7 @@ package appender
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/storage"
@@ -14,7 +15,14 @@ import (
 )
 
 const (
+	// The number of random characters appended to chunk ids to make sure that
+	// chunk ids are globally unique.
 	chunkUidLength = 5
+
+	// The time during which closed chunks are kept in memory even after writing
+	// them out to storage. This should be longer than the typical time it takes
+	// to serve a serach request on a mixer.
+	closedChunkGracePeriodMs = 1000
 )
 
 var (
@@ -165,11 +173,14 @@ func (a *Appender) storeClosedChunks() {
 			a.logger.WithError(err).Errorf("Failed to store chunk %v: %v", chunkProto.Id, err)
 		}
 
-		// Now, remove it from the appender's list. Note that this has to happen after
-		// the storage bit above (otherwise entries could temporarily not show up in searches).
-		a.removeOpenChunk(chunk)
+		// Now, remove it from the appender's list. We do this only after a grace period in order
+		// to make sure that query mixers don't end up in the case where they hit storage *before*
+		// the chunk is written, but hit this appender *after* the chunk is removed from memory.
+		time.AfterFunc(time.Duration(closedChunkGracePeriodMs)*time.Millisecond, func() {
+			a.removeOpenChunk(chunk)
+		})
 
-		a.logger.WithFields(logrus.Fields{"chunkId": chunkId}).Infof("Stored chunk")
+		a.logger.WithFields(logrus.Fields{"chunkId": chunkId}).Infof("Stored chunk with %d entries", len(chunkProto.Entries))
 	}
 }
 
