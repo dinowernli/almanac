@@ -24,6 +24,7 @@ before_install:
 
 script:
   - tools/check-buildifier.sh
+  - tools/lint.sh
   - go vet ./...
   - bazel build ...
   - bazel test ... --test_output=errors

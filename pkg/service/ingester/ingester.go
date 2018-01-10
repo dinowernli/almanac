@@ -8,8 +8,8 @@ import (
 	"time"
 
 	almHttp "dinowernli.me/almanac/pkg/http"
-	pb_almanac "dinowernli.me/almanac/proto"
 	dc "dinowernli.me/almanac/pkg/service/discovery"
+	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"

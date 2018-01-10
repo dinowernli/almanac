@@ -62,7 +62,7 @@ func (s *memoryBackend) write(id string, contents []byte) error {
 
 func (s *memoryBackend) list(prefix string) ([]string, error) {
 	result := []string{}
-	for k, _ := range s.data {
+	for k := range s.data {
 		if strings.HasPrefix(k, prefix) {
 			result = append(result, k)
 		}
