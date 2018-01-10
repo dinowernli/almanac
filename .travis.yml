@@ -2,8 +2,6 @@ dist: trusty
 
 sudo: required
 
-language: go
-
 jdk:
   - oraclejdk8
 
@@ -15,6 +13,7 @@ addons:
       - wget
       - gcc-5
       - g++-5
+      - golang-go
 
 before_install:
   - sudo apt-get purge openjdk-9*
