@@ -77,6 +77,8 @@ go_repository(
     tag = "v0.11.0",
 )
 
+# GCS and its deps.
+
 go_repository(
     name = "com_google_cloud_go",
     importpath = "cloud.google.com/go",
@@ -99,4 +101,24 @@ go_repository(
     name = "org_golang_x_oauth2",
     commit = "9ff8ebcc8e241d46f52ecc5bff0e5a2f2dbef402",
     importpath = "golang.org/x/oauth2",
+)
+
+# Kingping and its deps.
+
+go_repository(
+    name = "com_github_alecthomas_kingpin",
+    importpath = "github.com/alecthomas/kingpin",
+    tag = "v2.2.6",
+)
+
+go_repository(
+    name = "com_github_alecthomas_units",
+    commit = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+    importpath = "github.com/alecthomas/units",
+)
+
+go_repository(
+    name = "com_github_alecthomas_template",
+    commit = "a0175ee3bccc567396460bf5acd36800cb10c49c",
+    importpath = "github.com/alecthomas/template",
 )
