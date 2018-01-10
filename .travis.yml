@@ -3,8 +3,8 @@ language: go
 go_import_path: dinowernli.me/almanac
 
 install:
-  - dep ensure
   - tools/fetch-deps.sh
+  - dep ensure
 
 script:
   - tools/lint.sh
