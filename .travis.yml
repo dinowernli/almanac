@@ -24,7 +24,7 @@ before_install:
 
 script:
   - tools/check-buildifier.sh
-  - ! [ -n "$(find . -name '*.go' | xargs gofmt -l)" ]
+  - tools/lint.sh
   - go vet ./...
   - bazel build ...
   - bazel test ... --test_output=errors
