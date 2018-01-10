@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/pkg/storage"
+	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"

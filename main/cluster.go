@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net"
 
-	pb_almanac "dinowernli.me/almanac/proto"
 	"dinowernli.me/almanac/pkg/service/appender"
 	dc "dinowernli.me/almanac/pkg/service/discovery"
 	in "dinowernli.me/almanac/pkg/service/ingester"
 	mx "dinowernli.me/almanac/pkg/service/mixer"
 	st "dinowernli.me/almanac/pkg/storage"
+	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
