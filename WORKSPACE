@@ -76,3 +76,27 @@ go_repository(
     importpath = "github.com/sirupsen/logrus",
     tag = "v0.11.0",
 )
+
+go_repository(
+    name = "com_google_cloud_go",
+    importpath = "cloud.google.com/go",
+    tag = "v0.16.0",
+)
+
+go_repository(
+    name = "org_golang_google_api",
+    commit = "a0c31fb0028e0111b942a29b9fc2e9235202c48b",
+    importpath = "google.golang.org/api",
+)
+
+go_repository(
+    name = "com_github_googleapis_gax_go",
+    importpath = "github.com/googleapis/gax-go",
+    tag = "v2.0.0",
+)
+
+go_repository(
+    name = "org_golang_x_oauth2",
+    commit = "9ff8ebcc8e241d46f52ecc5bff0e5a2f2dbef402",
+    importpath = "golang.org/x/oauth2",
+)
