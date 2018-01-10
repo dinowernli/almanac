@@ -84,7 +84,7 @@ func ingesterHtmlTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "ingester.html.tmpl", size: 887, mode: os.FileMode(420), modTime: time.Unix(1515609708, 0)}
+	info := bindataFileInfo{name: "ingester.html.tmpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -104,7 +104,7 @@ func mixerHtmlTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "mixer.html.tmpl", size: 1678, mode: os.FileMode(420), modTime: time.Unix(1515609708, 0)}
+	info := bindataFileInfo{name: "mixer.html.tmpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
