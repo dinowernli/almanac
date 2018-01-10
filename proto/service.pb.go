@@ -26,6 +26,11 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
@@ -160,6 +165,243 @@ func init() {
 	proto.RegisterType((*IngestResponse)(nil), "almanac.IngestResponse")
 	proto.RegisterType((*SearchRequest)(nil), "almanac.SearchRequest")
 	proto.RegisterType((*SearchResponse)(nil), "almanac.SearchResponse")
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// Client API for Appender service
+
+type AppenderClient interface {
+	// Appends an entry to an open chunk on this appender.
+	Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error)
+	// Executes a search on any open chunk(s) on this appender.
+	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
+}
+
+type appenderClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewAppenderClient(cc *grpc.ClientConn) AppenderClient {
+	return &appenderClient{cc}
+}
+
+func (c *appenderClient) Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error) {
+	out := new(AppendResponse)
+	err := grpc.Invoke(ctx, "/almanac.Appender/Append", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appenderClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
+	out := new(SearchResponse)
+	err := grpc.Invoke(ctx, "/almanac.Appender/Search", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Appender service
+
+type AppenderServer interface {
+	// Appends an entry to an open chunk on this appender.
+	Append(context.Context, *AppendRequest) (*AppendResponse, error)
+	// Executes a search on any open chunk(s) on this appender.
+	Search(context.Context, *SearchRequest) (*SearchResponse, error)
+}
+
+func RegisterAppenderServer(s *grpc.Server, srv AppenderServer) {
+	s.RegisterService(&_Appender_serviceDesc, srv)
+}
+
+func _Appender_Append_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppenderServer).Append(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/almanac.Appender/Append",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppenderServer).Append(ctx, req.(*AppendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Appender_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppenderServer).Search(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/almanac.Appender/Search",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppenderServer).Search(ctx, req.(*SearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Appender_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "almanac.Appender",
+	HandlerType: (*AppenderServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Append",
+			Handler:    _Appender_Append_Handler,
+		},
+		{
+			MethodName: "Search",
+			Handler:    _Appender_Search_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/service.proto",
+}
+
+// Client API for Ingester service
+
+type IngesterClient interface {
+	Ingest(ctx context.Context, in *IngestRequest, opts ...grpc.CallOption) (*IngestResponse, error)
+}
+
+type ingesterClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewIngesterClient(cc *grpc.ClientConn) IngesterClient {
+	return &ingesterClient{cc}
+}
+
+func (c *ingesterClient) Ingest(ctx context.Context, in *IngestRequest, opts ...grpc.CallOption) (*IngestResponse, error) {
+	out := new(IngestResponse)
+	err := grpc.Invoke(ctx, "/almanac.Ingester/Ingest", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Ingester service
+
+type IngesterServer interface {
+	Ingest(context.Context, *IngestRequest) (*IngestResponse, error)
+}
+
+func RegisterIngesterServer(s *grpc.Server, srv IngesterServer) {
+	s.RegisterService(&_Ingester_serviceDesc, srv)
+}
+
+func _Ingester_Ingest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IngestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IngesterServer).Ingest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/almanac.Ingester/Ingest",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IngesterServer).Ingest(ctx, req.(*IngestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Ingester_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "almanac.Ingester",
+	HandlerType: (*IngesterServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Ingest",
+			Handler:    _Ingester_Ingest_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/service.proto",
+}
+
+// Client API for Mixer service
+
+type MixerClient interface {
+	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
+}
+
+type mixerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewMixerClient(cc *grpc.ClientConn) MixerClient {
+	return &mixerClient{cc}
+}
+
+func (c *mixerClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
+	out := new(SearchResponse)
+	err := grpc.Invoke(ctx, "/almanac.Mixer/Search", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Mixer service
+
+type MixerServer interface {
+	Search(context.Context, *SearchRequest) (*SearchResponse, error)
+}
+
+func RegisterMixerServer(s *grpc.Server, srv MixerServer) {
+	s.RegisterService(&_Mixer_serviceDesc, srv)
+}
+
+func _Mixer_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MixerServer).Search(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/almanac.Mixer/Search",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MixerServer).Search(ctx, req.(*SearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Mixer_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "almanac.Mixer",
+	HandlerType: (*MixerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Search",
+			Handler:    _Mixer_Search_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/service.proto",
 }
 
 func init() { proto.RegisterFile("proto/service.proto", fileDescriptor0) }
