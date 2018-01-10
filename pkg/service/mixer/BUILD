@@ -11,7 +11,7 @@ go_library(
         "//pkg/http:go_default_library",
         "//pkg/index:go_default_library",
         "//proto:go_default_library",
-        "//service/discovery:go_default_library",
+        "//pkg/service/discovery:go_default_library",
         "//storage:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
