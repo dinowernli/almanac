@@ -10,11 +10,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-const (
-	appenderFanout = 2 // The number of appenders each ingester talks to.
-	httpPort       = 12345
-)
-
 var (
 	flagStorageType = kingpin.Flag("storage", "Which kind of storage to use").Default("memory").Enum("memory", "gcs")
 	flagGcsBucket   = kingpin.Flag("gcs.bucket", "Which gcs bucket to use for storage").Default("almanac-dev").String()
@@ -26,6 +21,9 @@ func main() {
 	kingpin.Parse()
 	logger := logrus.New()
 	logger.Out = os.Stderr
+
+	appenderFanout := 2
+	httpPort := 12345
 
 	conf := &config{
 		smallChunkMaxEntries: 10,
