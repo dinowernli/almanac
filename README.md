@@ -1,6 +1,7 @@
 # almanac
 
 [![Build Status](https://travis-ci.org/dinowernli/almanac.svg?branch=master)](https://travis-ci.org/dinowernli/almanac)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dinowernli/almanac)](https://goreportcard.com/report/github.com/dinowernli/almanac)
 
 A distributed log storage and serving system.
 
