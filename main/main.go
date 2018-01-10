@@ -15,18 +15,21 @@ const (
 )
 
 var (
-	conf = &config{
-		smallChunkMaxEntries: 10,
-		smallChunkSpreadMs:   5000,
-		smallChunkMaxAgeMs:   3000,
-	}
-
 	appenderPorts = []int{5001, 5002, 5003, 5004, 5005}
 )
 
 func main() {
 	logger := logrus.New()
 	logger.Out = os.Stderr
+
+	conf := &config{
+		smallChunkMaxEntries: 10,
+		smallChunkSpreadMs:   5000,
+		smallChunkMaxAgeMs:   3000,
+
+		storageType: storageTypeGcs,
+		gcsBucket:   "almanac-dev",
+	}
 
 	cluster, err := createCluster(logger, conf, appenderPorts, appenderFanout)
 	if err != nil {

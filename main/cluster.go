@@ -16,6 +16,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	storageTypeMemory = "memory"
+	storageTypeGcs    = "gcs"
+)
+
 // entry represents a log entry as would be supplied by a user of the system.
 type entry struct {
 	Message     string `json:"message"`
@@ -28,6 +33,9 @@ type config struct {
 	smallChunkMaxEntries int
 	smallChunkSpreadMs   int64
 	smallChunkMaxAgeMs   int64
+
+	storageType string
+	gcsBucket   string
 }
 
 // localCluster holds a test setup ready to use for testing.
@@ -44,7 +52,19 @@ type localCluster struct {
 
 // createCluster sets up a test cluster, including all services required to run the system.
 func createCluster(logger *logrus.Logger, config *config, appenderPorts []int, appenderFanout int) (*localCluster, error) {
-	storage := st.NewInMemoryStorage()
+	var err error
+	var storage *st.Storage
+	if config.storageType == storageTypeMemory {
+		storage = st.NewInMemoryStorage()
+	} else if config.storageType == storageTypeGcs {
+		storage, err = st.NewGcsStorage(config.gcsBucket)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create gcs storage: %v", err)
+		}
+	} else {
+		return nil, fmt.Errorf("unrecognized storage type: %s", config.storageType)
+	}
+
 	appenders := []*appender.Appender{}
 	servers := []*grpc.Server{}
 	appenderAddresses := []string{}

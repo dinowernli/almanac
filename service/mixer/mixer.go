@@ -22,7 +22,7 @@ const (
 	urlParamQuery       = "q"
 	urlParamStartMs     = "s"
 	urlParamEndMs       = "e"
-	httpSearchTimeoutMs = 300
+	httpSearchTimeoutMs = 3000
 )
 
 var (
