@@ -2,6 +2,11 @@ language: go
 
 go_import_path: dinowernli.me/almanac
 
+addons:
+  apt:
+    packages:
+      - protobuf-compiler
+
 install:
   - tools/fetch-deps.sh
   - dep ensure
