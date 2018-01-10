@@ -76,3 +76,49 @@ go_repository(
     importpath = "github.com/sirupsen/logrus",
     tag = "v0.11.0",
 )
+
+# GCS and its deps.
+
+go_repository(
+    name = "com_google_cloud_go",
+    importpath = "cloud.google.com/go",
+    tag = "v0.16.0",
+)
+
+go_repository(
+    name = "org_golang_google_api",
+    commit = "a0c31fb0028e0111b942a29b9fc2e9235202c48b",
+    importpath = "google.golang.org/api",
+)
+
+go_repository(
+    name = "com_github_googleapis_gax_go",
+    importpath = "github.com/googleapis/gax-go",
+    tag = "v2.0.0",
+)
+
+go_repository(
+    name = "org_golang_x_oauth2",
+    commit = "9ff8ebcc8e241d46f52ecc5bff0e5a2f2dbef402",
+    importpath = "golang.org/x/oauth2",
+)
+
+# Kingping and its deps.
+
+go_repository(
+    name = "com_github_alecthomas_kingpin",
+    importpath = "github.com/alecthomas/kingpin",
+    tag = "v2.2.6",
+)
+
+go_repository(
+    name = "com_github_alecthomas_units",
+    commit = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+    importpath = "github.com/alecthomas/units",
+)
+
+go_repository(
+    name = "com_github_alecthomas_template",
+    commit = "a0175ee3bccc567396460bf5acd36800cb10c49c",
+    importpath = "github.com/alecthomas/template",
+)

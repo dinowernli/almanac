@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/alecthomas/kingpin"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
@@ -15,18 +16,25 @@ const (
 )
 
 var (
-	conf = &config{
-		smallChunkMaxEntries: 10,
-		smallChunkSpreadMs:   5000,
-		smallChunkMaxAgeMs:   3000,
-	}
+	flagStorageType = kingpin.Flag("storage", "Which kind of storage to use").Default("memory").Enum("memory", "gcs")
+	flagGcsBucket   = kingpin.Flag("gcs.bucket", "Which gcs bucket to use for storage").Default("almanac-dev").String()
 
 	appenderPorts = []int{5001, 5002, 5003, 5004, 5005}
 )
 
 func main() {
+	kingpin.Parse()
 	logger := logrus.New()
 	logger.Out = os.Stderr
+
+	conf := &config{
+		smallChunkMaxEntries: 10,
+		smallChunkSpreadMs:   5000,
+		smallChunkMaxAgeMs:   3000,
+
+		storageType: *flagStorageType,
+		gcsBucket:   *flagGcsBucket,
+	}
 
 	cluster, err := createCluster(logger, conf, appenderPorts, appenderFanout)
 	if err != nil {

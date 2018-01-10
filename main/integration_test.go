@@ -22,6 +22,9 @@ var (
 		smallChunkMaxEntries: 10,
 		smallChunkSpreadMs:   5000,
 		smallChunkMaxAgeMs:   3000,
+
+		storageType: storageTypeMemory,
+		gcsBucket:   "",
 	}
 )
 

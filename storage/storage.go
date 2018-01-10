@@ -60,7 +60,7 @@ func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) (string, error) {
 
 	err = s.backend.write(fmt.Sprintf("%s%s", chunkPrefix, chunkId), bytes)
 	if err != nil {
-		return "", fmt.Errorf("unable to write chunk bytes to backend")
+		return "", fmt.Errorf("unable to write chunk bytes to backend: %v", err)
 	}
 
 	return chunkId, nil
@@ -84,4 +84,13 @@ func NewDiskStorage(path string) *Storage {
 // NewInMemoryStorage returns a storage backed by an in-memory map.
 func NewInMemoryStorage() *Storage {
 	return &Storage{&memoryBackend{data: map[string][]byte{}}}
+}
+
+// NewGcsStorage returns a storage backed by the supplied gcs bucket.
+func NewGcsStorage(bucketName string) (*Storage, error) {
+	backend, err := NewGcsBackend(bucketName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create gcs backend: %v", err)
+	}
+	return &Storage{backend}, nil
 }
