@@ -6,10 +6,10 @@ import (
 	"sort"
 	"time"
 
-	almHttp "dinowernli.me/almanac/http"
+	almHttp "dinowernli.me/almanac/pkg/http"
 	pb_almanac "dinowernli.me/almanac/proto"
-	"dinowernli.me/almanac/service/discovery"
-	"dinowernli.me/almanac/storage"
+	"dinowernli.me/almanac/pkg/service/discovery"
+	"dinowernli.me/almanac/pkg/storage"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"

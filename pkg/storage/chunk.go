@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"dinowernli.me/almanac/index"
+	"dinowernli.me/almanac/pkg/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"golang.org/x/net/context"
