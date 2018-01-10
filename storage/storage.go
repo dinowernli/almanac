@@ -70,7 +70,7 @@ func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) (string, error) {
 func NewTempDiskStorage() (*Storage, error) {
 	path, err := ioutil.TempDir("", tempDirPrefix)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create temp dir: %v")
+		return nil, fmt.Errorf("unable to create temp dir: %v", err)
 	}
 	return NewDiskStorage(path), nil
 }

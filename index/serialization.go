@@ -34,7 +34,7 @@ func Serialize(index *Index) (*pb_almanac.BleveIndex, error) {
 
 		header, err := zip.FileInfoHeader(info)
 		if err != nil {
-			return fmt.Errorf("could not create zip header", err)
+			return fmt.Errorf("could not create zip header: %v", err)
 		}
 
 		// The 'path' string is of the form '/tmp/root/somedir/foo' for a root dir
@@ -105,12 +105,12 @@ func Deserialize(proto *pb_almanac.BleveIndex) (*Index, error) {
 
 		destFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
-			return nil, fmt.Errorf("failed to create file %s: %v", destFile.Name, err)
+			return nil, fmt.Errorf("failed to create file %s: %v", destFile.Name(), err)
 		}
 		defer destFile.Close()
 
 		if _, err := io.Copy(destFile, fileReader); err != nil {
-			return nil, fmt.Errorf("failed to copy into file %s: %v", destFile.Name, err)
+			return nil, fmt.Errorf("failed to copy into file %s: %v", destFile.Name(), err)
 		}
 	}
 

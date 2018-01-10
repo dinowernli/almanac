@@ -13,6 +13,7 @@ addons:
       - wget
       - gcc-5
       - g++-5
+      - golang-go
 
 before_install:
   - sudo apt-get purge openjdk-9*
@@ -23,6 +24,7 @@ before_install:
 
 script:
   - tools/check-buildifier.sh
+  - go vet ./...
   - bazel build ...
   - bazel test ... --test_output=errors
 
