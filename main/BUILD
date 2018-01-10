@@ -7,7 +7,7 @@ go_binary(
         "main.go",
     ],
     deps = [
-        "//http:go_default_library",
+        "//pkg/http:go_default_library",
         "//index:go_default_library",
         "//proto:go_default_library",
         "//service/appender:go_default_library",
