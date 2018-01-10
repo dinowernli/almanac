@@ -8,7 +8,7 @@ go_library(
     ),
     visibility = ["//visibility:public"],
     deps = [
-        "//index:go_default_library",
+        "//pkg/index:go_default_library",
         "//proto:go_default_library",
         "@com_github_blevesearch_bleve//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",

@@ -8,7 +8,7 @@ go_binary(
     ],
     deps = [
         "//pkg/http:go_default_library",
-        "//index:go_default_library",
+        "//pkg/index:go_default_library",
         "//proto:go_default_library",
         "//service/appender:go_default_library",
         "//service/discovery:go_default_library",
@@ -32,7 +32,7 @@ go_test(
         "cluster.go",
     ]),
     deps = [
-        "//index:go_default_library",
+        "//pkg/index:go_default_library",
         "//proto:go_default_library",
         "//service/appender:go_default_library",
         "//service/discovery:go_default_library",
