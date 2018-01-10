@@ -6,7 +6,7 @@ import (
 	"time"
 
 	pb_almanac "dinowernli.me/almanac/proto"
-	"dinowernli.me/almanac/storage"
+	"dinowernli.me/almanac/pkg/storage"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"

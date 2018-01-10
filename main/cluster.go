@@ -6,11 +6,11 @@ import (
 	"net"
 
 	pb_almanac "dinowernli.me/almanac/proto"
-	"dinowernli.me/almanac/service/appender"
-	dc "dinowernli.me/almanac/service/discovery"
-	in "dinowernli.me/almanac/service/ingester"
-	mx "dinowernli.me/almanac/service/mixer"
-	st "dinowernli.me/almanac/storage"
+	"dinowernli.me/almanac/pkg/service/appender"
+	dc "dinowernli.me/almanac/pkg/service/discovery"
+	in "dinowernli.me/almanac/pkg/service/ingester"
+	mx "dinowernli.me/almanac/pkg/service/mixer"
+	st "dinowernli.me/almanac/pkg/storage"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

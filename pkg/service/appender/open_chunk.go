@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"dinowernli.me/almanac/index"
+	"dinowernli.me/almanac/pkg/index"
 	pb_almanac "dinowernli.me/almanac/proto"
-	"dinowernli.me/almanac/storage"
+	"dinowernli.me/almanac/pkg/storage"
 
 	"golang.org/x/net/context"
 )

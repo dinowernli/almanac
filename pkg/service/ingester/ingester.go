@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	almHttp "dinowernli.me/almanac/http"
+	almHttp "dinowernli.me/almanac/pkg/http"
 	pb_almanac "dinowernli.me/almanac/proto"
-	dc "dinowernli.me/almanac/service/discovery"
+	dc "dinowernli.me/almanac/pkg/service/discovery"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"

@@ -16,8 +16,8 @@ const (
 
 var (
 	htmlTemplates = template.Must(template.ParseFiles(
-		"http/templates/ingester.html.tmpl",
-		"http/templates/mixer.html.tmpl",
+		"pkg/http/templates/ingester.html.tmpl",
+		"pkg/http/templates/mixer.html.tmpl",
 	))
 )
 
