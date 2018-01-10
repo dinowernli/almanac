@@ -60,7 +60,7 @@ type Chunk struct {
 func openChunk(chunkId string, chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 	idx, err := index.Deserialize(chunkProto.Index)
 	if err != nil {
-		return nil, fmt.Errorf("failed to deserialize index from chunk: %v", chunkId, err)
+		return nil, fmt.Errorf("failed to deserialize index from chunk %s: %v", chunkId, err)
 	}
 
 	entryMap := map[string]*pb_almanac.LogEntry{}
@@ -109,7 +109,7 @@ func Search(ctx context.Context, idx *index.Index, entries map[string]*pb_almana
 func (c *Chunk) fetchEntry(id string) (*pb_almanac.LogEntry, error) {
 	result, ok := c.entries[id]
 	if !ok {
-		return nil, fmt.Errorf("entry %d not found", id)
+		return nil, fmt.Errorf("entry %s not found", id)
 	}
 	return result, nil
 }

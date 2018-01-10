@@ -2,6 +2,8 @@ dist: trusty
 
 sudo: required
 
+language: go
+
 jdk:
   - oraclejdk8
 
@@ -23,6 +25,7 @@ before_install:
 
 script:
   - tools/check-buildifier.sh
+  - go vet ./...
   - bazel build ...
   - bazel test ... --test_output=errors
 
