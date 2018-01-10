@@ -9,8 +9,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/http:go_default_library",
-        "//proto:go_default_library",
         "//pkg/service/discovery:go_default_library",
+        "//proto:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
