@@ -16,21 +16,30 @@ TODO(dino) link to doc.
 
 ## Building and running
 
+### Repo setup
+
+If you have a working go environment, you will need to run the following as one-time setup:
+
+* `./tools/fetch-deps.sh`
+* `dep ensure`
+
 ### Running the demo
 
-In order to run a demo, execute:
+First, build the binary by executing:
 
-`bazel run main`
+`(cd main && go build)`
 
-This will start a single-process cluster and will print the locations of a few relevant web pages which can be used to play around manually.
+The binary can then be run using:
 
-By default, the demo runs against an in-memory storage implementation. In order to use an actual GCS bucket, execute:
+`./main/main`
 
-`GOOGLE_APPLICATION_CREDENTIALS=<path> bazel run main -- --storage=gcs --gcs.bucket=<bucket>`
+This will start a single-process cluster and will print the locations of a few relevant web pages which can be used to play around manually. By default, the demo runs against an in-memory storage implementation. In order to use an actual GCS bucket, execute:
+
+`GOOGLE_APPLICATION_CREDENTIALS=<path> ./main/main --storage=gcs --gcs.bucket=<bucket>`
 
 ### Running tests
 
-In order to run the tests used for CI, execute:
+To run all the tests, execute:
 
-`bazel test ...`
+`go test ./...`
 
