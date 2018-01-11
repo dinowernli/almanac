@@ -3,7 +3,7 @@
 set -e
 set -x
 
-FINDCMD='find . -name "*.go" -and -not -path "*vendor*" -and -not -name "bindata.go" -and -not -path "*.pb.go"'
+FINDCMD='find . -name "*.go" -and -not -path "*vendor*"'
 
 if [[ "$1" == "--fix" ]]; then
   eval $FINDCMD | xargs gofmt -s -w
