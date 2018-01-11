@@ -1,5 +1,7 @@
 bazel-*
 *.swp
-main/main
+
+almanac
 
 vendor/
+.idea/

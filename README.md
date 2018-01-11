@@ -16,8 +16,6 @@ TODO(dino) link to doc.
 
 ## Building and running
 
-### Repo setup
-
 If you have a working go environment, you will need to run the following as one-time setup:
 
 * `./tools/fetch-deps.sh`
@@ -25,21 +23,16 @@ If you have a working go environment, you will need to run the following as one-
 
 ### Running the demo
 
-First, build the binary by executing:
+Run the demo binary by executing:
 
-`(cd main && go build)`
-
-The binary can then be run using:
-
-`./main/main`
+`go run ./cmd/almanac/almanac.go`
 
 This will start a single-process cluster and will print the locations of a few relevant web pages which can be used to play around manually. By default, the demo runs against an in-memory storage implementation. In order to use an actual GCS bucket, execute:
 
-`GOOGLE_APPLICATION_CREDENTIALS=<path> ./main/main --storage=gcs --gcs.bucket=<bucket>`
+`GOOGLE_APPLICATION_CREDENTIALS=<path> go run ./cmd/almanac/almanac.go --storage=gcs --gcs.bucket=<bucket>`
 
 ### Running tests
 
 To run all the tests, execute:
 
 `go test ./...`
-

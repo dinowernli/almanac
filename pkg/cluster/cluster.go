@@ -1,7 +1,6 @@
-package main
+package cluster
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 
@@ -29,47 +28,47 @@ type entry struct {
 }
 
 // config holds a few configurable values defining the behavior of the system.
-type config struct {
-	smallChunkMaxEntries int
-	smallChunkSpreadMs   int64
-	smallChunkMaxAgeMs   int64
+type Config struct {
+	SmallChunkMaxEntries int
+	SmallChunkSpreadMs   int64
+	SmallChunkMaxAgeMs   int64
 
-	storageType string
-	gcsBucket   string
+	StorageType string
+	GcsBucket   string
 }
 
 // localCluster holds a test setup ready to use for testing.
-type localCluster struct {
-	mixer    *mx.Mixer
-	ingester *in.Ingester
+type LocalCluster struct {
+	Mixer    *mx.Mixer
+	Ingester *in.Ingester
 
-	appenders []*appender.Appender
-	storage   *st.Storage
-	discovery *dc.Discovery
+	Appenders []*appender.Appender
+	Storage   *st.Storage
+	Discovery *dc.Discovery
 
 	servers []*grpc.Server
 }
 
 // createCluster sets up a test cluster, including all services required to run the system.
-func createCluster(logger *logrus.Logger, config *config, appenderPorts []int, appenderFanout int) (*localCluster, error) {
+func CreateCluster(logger *logrus.Logger, config *Config, appenderPorts []int, appenderFanout int) (*LocalCluster, error) {
 	var err error
 	var storage *st.Storage
-	if config.storageType == storageTypeMemory {
+	if config.StorageType == storageTypeMemory {
 		storage = st.NewInMemoryStorage()
-	} else if config.storageType == storageTypeGcs {
-		storage, err = st.NewGcsStorage(config.gcsBucket)
+	} else if config.StorageType == storageTypeGcs {
+		storage, err = st.NewGcsStorage(config.GcsBucket)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create gcs storage: %v", err)
 		}
 	} else {
-		return nil, fmt.Errorf("unrecognized storage type: %s", config.storageType)
+		return nil, fmt.Errorf("unrecognized storage type: %s", config.StorageType)
 	}
 
 	appenders := []*appender.Appender{}
 	servers := []*grpc.Server{}
 	appenderAddresses := []string{}
 	for _, port := range appenderPorts {
-		appender, err := appender.New(logger, storage, config.smallChunkMaxEntries, config.smallChunkSpreadMs, config.smallChunkMaxAgeMs)
+		appender, err := appender.New(logger, storage, config.SmallChunkMaxEntries, config.SmallChunkSpreadMs, config.SmallChunkMaxAgeMs)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create appender %d: %v", port, err)
 		}
@@ -95,17 +94,18 @@ func createCluster(logger *logrus.Logger, config *config, appenderPorts []int, a
 		return nil, fmt.Errorf("unable to create ingester: %v", err)
 	}
 
-	return &localCluster{
-		appenders: appenders,
-		ingester:  ingester,
-		storage:   storage,
-		discovery: discovery,
-		mixer:     mx.New(logger, storage, discovery),
-		servers:   servers,
+	return &LocalCluster{
+		Appenders: appenders,
+		Ingester:  ingester,
+		Storage:   storage,
+		Discovery: discovery,
+		Mixer:     mx.New(logger, storage, discovery),
+
+		servers: servers,
 	}, nil
 }
 
-func (c *localCluster) stop() {
+func (c *LocalCluster) Stop() {
 	for _, s := range c.servers {
 		s.Stop()
 	}
@@ -124,12 +124,4 @@ func startAppenderServer(appender *appender.Appender, port int) (*grpc.Server, s
 	}()
 
 	return server, listen.Addr().String(), nil
-}
-
-func newIngestRequest(e interface{}) (*pb_almanac.IngestRequest, error) {
-	entryJson, err := json.Marshal(e)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal entry to json: %v", err)
-	}
-	return &pb_almanac.IngestRequest{EntryJson: string(entryJson)}, nil
 }
