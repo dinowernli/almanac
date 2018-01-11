@@ -126,7 +126,7 @@ func (m *Mixer) searchChunk(ctx context.Context, chunkId string, request *pb_alm
 	result := &partialResult{}
 	chunk, err := m.storage.LoadChunk(chunkId)
 	if err != nil {
-		result.err = fmt.Errorf("unable to load chunk %s: %v\n", chunkId, err)
+		result.err = fmt.Errorf("unable to load chunk %s: %v", chunkId, err)
 		resultChan <- result
 		return
 	}
@@ -134,7 +134,7 @@ func (m *Mixer) searchChunk(ctx context.Context, chunkId string, request *pb_alm
 
 	entries, err := chunk.Search(ctx, request.Query, request.Num, request.StartMs, request.EndMs)
 	if err != nil {
-		result.err = fmt.Errorf("unable to perform search on chunk %s: %v\n", chunkId, err)
+		result.err = fmt.Errorf("unable to perform search on chunk %s: %v", chunkId, err)
 		resultChan <- result
 		return
 	}

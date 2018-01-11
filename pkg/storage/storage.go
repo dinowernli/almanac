@@ -88,7 +88,7 @@ func NewInMemoryStorage() *Storage {
 
 // NewGcsStorage returns a storage backed by the supplied gcs bucket.
 func NewGcsStorage(bucketName string) (*Storage, error) {
-	backend, err := NewGcsBackend(bucketName)
+	backend, err := newGcsBackend(bucketName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create gcs backend: %v", err)
 	}

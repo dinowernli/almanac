@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -x
 
 FINDCMD='find . -name "*.go" -and -not -path "*vendor*" -and -not -name "bindata.go" -and -not -path "*.pb.go"'
 
