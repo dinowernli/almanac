@@ -10,6 +10,7 @@ BACKUP_ROOT=$TMPDIR/almanac
 cp -R $ALMANAC_ROOT $BACKUP_ROOT
 BACKUP_PROTO_DIR=$BACKUP_ROOT/proto
 
+# Do the actual generation.
 protoc \
   --go_out=$ALMANAC_ROOT \
   --go_out=plugins=grpc:. \
@@ -18,7 +19,6 @@ protoc \
 PROTOC_OUT=$?
 
 DIFF=`diff -rq $BACKUP_PROTO_DIR $PROTO_DIR`
-
 rm -rf $TMPDIR
 
 # Definitely error out if protoc failed.
