@@ -3,3 +3,4 @@ bazel-*
 main/main
 
 vendor/
+.idea/
