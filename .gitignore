@@ -1,2 +1,5 @@
 bazel-*
 *.swp
+main/main
+
+vendor/

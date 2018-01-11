@@ -6,19 +6,13 @@ import (
 	"io"
 	"strconv"
 
+	"dinowernli.me/almanac/pkg/http/templates"
 	pb_almanac "dinowernli.me/almanac/proto"
 )
 
-const (
-	ingesterHtmlTemplate = "ingester.html.tmpl"
-	mixerHtmlTemplate    = "mixer.html.tmpl"
-)
-
 var (
-	htmlTemplates = template.Must(template.ParseFiles(
-		"pkg/http/templates/ingester.html.tmpl",
-		"pkg/http/templates/mixer.html.tmpl",
-	))
+	ingesterTemplate = mustTemplate("ingester.html.tmpl")
+	mixerTemplate    = mustTemplate("mixer.html.tmpl")
 )
 
 // IngesterData holds the data required to render the ingester page.
@@ -31,9 +25,9 @@ type IngesterData struct {
 // Render renders the template into the supplied writer using the data
 // available in this instance.
 func (d *IngesterData) Render(writer io.Writer) error {
-	err := htmlTemplates.ExecuteTemplate(writer, ingesterHtmlTemplate, d)
+	err := ingesterTemplate.Execute(writer, d)
 	if err != nil {
-		return fmt.Errorf("unable to render template %s: %v", ingesterHtmlTemplate, err)
+		return fmt.Errorf("unable to render ingester template: %v", err)
 	}
 	return nil
 }
@@ -51,9 +45,9 @@ type MixerData struct {
 // Render renders the template into the supplied writer using the data
 // available in this instance.
 func (d *MixerData) Render(writer io.Writer) error {
-	err := htmlTemplates.ExecuteTemplate(writer, mixerHtmlTemplate, d)
+	err := mixerTemplate.Execute(writer, d)
 	if err != nil {
-		return fmt.Errorf("unable to render template %s: %v", mixerHtmlTemplate, err)
+		return fmt.Errorf("unable to render mixer template: %v", err)
 	}
 	return nil
 }
@@ -66,4 +60,8 @@ func ParseTimestamp(input string, fallback int64) int64 {
 	} else {
 		return fallback
 	}
+}
+
+func mustTemplate(assetName string) *template.Template {
+	return template.Must(template.New("").Parse(string(templates.MustAsset(assetName))))
 }

@@ -1,31 +1,28 @@
-dist: trusty
+language: go
 
-sudo: required
+go_import_path: dinowernli.me/almanac
 
-jdk:
-  - oraclejdk8
+env:
+  global:
+    - PROTOC_RELEASE="https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip"
+    - PROTOC_TARGET="${HOME}/protoc"
+    - PATH="${PROTOC_TARGET}/bin:${PATH}"
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - wget
-      - gcc-5
-      - g++-5
-      - golang-go
+cache:
+  - "${HOME}/protoc"
 
-before_install:
-  - sudo apt-get purge openjdk-9*
-  - sudo apt-get purge oracle-java9*
-  - wget 'https://github.com/bazelbuild/bazel/releases/download/0.7.0/bazel_0.7.0-linux-x86_64.deb'
-  - chmod +x bazel_0.7.0-linux-x86_64.deb
-  - sudo dpkg -i bazel_0.7.0-linux-x86_64.deb
+install:
+  - if [ ! -d "${PROTOC_TARGET}" ]; then curl -fsSL "$PROTOC_RELEASE" > "${PROTOC_TARGET}.zip"; fi
+  - if [ -f "${PROTOC_TARGET}.zip" ]; then unzip "${PROTOC_TARGET}.zip" -d "${PROTOC_TARGET}"; fi
+  - go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+  - tools/fetch-deps.sh
+  - dep ensure
 
 script:
-  - tools/check-buildifier.sh
   - tools/lint.sh
   - go vet ./...
-  - bazel build ...
-  - bazel test ... --test_output=errors
+  - tools/genproto.sh --check
+  - tools/gendata.sh --check
+  - go build ./...
+  - go test ./...
 

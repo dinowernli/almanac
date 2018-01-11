@@ -2,11 +2,13 @@
 
 set -e
 
+FINDCMD='find . -name "*.go" -and -not -path "*vendor*" -and -not -name "bindata.go" -and -not -path "*.pb.go"'
+
 if [[ "$1" == "--fix" ]]; then
-  find . -name '*.go' | xargs gofmt -s -w
+  eval $FINDCMD | xargs gofmt -s -w
   exit 0
 else
-  BAD=`find . -name '*.go' | xargs gofmt -l`
+  BAD=`eval $FINDCMD | xargs gofmt -l`
   echo $BAD
   if [[ -z $BAD ]]; then
     echo 'lint successful'
