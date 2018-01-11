@@ -17,6 +17,7 @@ protoc \
   --proto_path=$ALMANAC_ROOT \
   $PROTO_DIR/*.proto
 PROTOC_OUT=$?
+find $PROTO_DIR -name '*.go' | xargs gofmt -s -w
 
 DIFF=`diff -rq $BACKUP_PROTO_DIR $PROTO_DIR`
 rm -rf $TMPDIR

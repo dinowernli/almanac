@@ -20,14 +20,7 @@ const (
 	storageTypeGcs    = "gcs"
 )
 
-// entry represents a log entry as would be supplied by a user of the system.
-type entry struct {
-	Message     string `json:"message"`
-	Logger      string `json:"logger"`
-	TimestampMs int64  `json:"timestamp_ms"`
-}
-
-// config holds a few configurable values defining the behavior of the system.
+// Config holds a few configurable values defining the behavior of the system.
 type Config struct {
 	SmallChunkMaxEntries int
 	SmallChunkSpreadMs   int64
@@ -37,7 +30,7 @@ type Config struct {
 	GcsBucket   string
 }
 
-// localCluster holds a test setup ready to use for testing.
+// LocalCluster holds a test setup ready to use for testing.
 type LocalCluster struct {
 	Mixer    *mx.Mixer
 	Ingester *in.Ingester
@@ -49,7 +42,7 @@ type LocalCluster struct {
 	servers []*grpc.Server
 }
 
-// createCluster sets up a test cluster, including all services required to run the system.
+// CreateCluster sets up a test cluster, including all services required to run the system.
 func CreateCluster(logger *logrus.Logger, config *Config, appenderPorts []int, appenderFanout int) (*LocalCluster, error) {
 	var err error
 	var storage *st.Storage
@@ -105,6 +98,7 @@ func CreateCluster(logger *logrus.Logger, config *Config, appenderPorts []int, a
 	}, nil
 }
 
+// Stop stops all the servers running as part of this local cluster.
 func (c *LocalCluster) Stop() {
 	for _, s := range c.servers {
 		s.Stop()

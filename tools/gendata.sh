@@ -18,6 +18,7 @@ pushd $TEMPLATES_DIR
 rm $FILENAME
 go-bindata -nometadata -o=$FILENAME -pkg=templates *.tmpl
 BINDATA_OUT=$?
+gofmt -s -w $FILENAME
 popd
 
 DIFF=`diff -rq $BACKUP_TEMPLATES_DIR $TEMPLATES_DIR`

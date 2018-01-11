@@ -9,9 +9,9 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-// NewGcsBackend returns a new backend implementation backed by the supplied
+// newGcsBackend returns a new backend implementation backed by the supplied
 // gcs bucket name.
-func NewGcsBackend(bucketName string) (*gcsBackend, error) {
+func newGcsBackend(bucketName string) (*gcsBackend, error) {
 	gcsClient, err := storage.NewClient(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("unable to create gcs client: %v", err)

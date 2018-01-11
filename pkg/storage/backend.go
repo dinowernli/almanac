@@ -50,9 +50,8 @@ func (s *memoryBackend) read(id string) ([]byte, error) {
 	result := s.data[id]
 	if result == nil {
 		return nil, fmt.Errorf("value %s does not exist", id)
-	} else {
-		return result, nil
 	}
+	return result, nil
 }
 
 func (s *memoryBackend) write(id string, contents []byte) error {
