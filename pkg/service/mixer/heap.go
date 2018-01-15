@@ -55,6 +55,11 @@ func (i *chunkHeapItem) key() int64 {
 		return i.chunkIdProto.StartMs
 	}
 
+	if i.idx >= len(i.entries) {
+		fmt.Printf("BAD: index %d but length is %d", i.idx, len(i.entries))
+	}
+
+
 	// If this is not the first item, we've loaded the entries.
 	return i.entries[i.idx].TimestampMs
 }
@@ -73,13 +78,12 @@ func (i *chunkHeapItem) next() (heapItem, error) {
 		return nil, fmt.Errorf("unable to load chunk from 'next' : %v", err)
 	}
 
+	// Just update the index and reuse this item as the next one.
+	i.idx++
 	if i.idx >= len(i.entries) {
 		// We've used up all the results, no next item.
 		return nil, nil
 	}
-
-	// Just update the index and reuse this item as the next one.
-	i.idx++
 	return i, nil
 }
 
@@ -128,12 +132,11 @@ func (i *appenderHeapItem) entry() (*pb_almanac.LogEntry, error) {
 }
 
 func (i *appenderHeapItem) next() (heapItem, error) {
+	// Just update the index and reuse this item as the next one.
+	i.idx++
 	if i.idx >= len(i.entries) {
 		// We've used up all the results, no next item.
 		return nil, nil
 	}
-
-	// Just update the index and reuse this item as the next one.
-	i.idx++
 	return i, nil
 }

@@ -8,6 +8,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/golang/protobuf/proto"
+	"strings"
 )
 
 const (
@@ -24,17 +25,25 @@ type Storage struct {
 // ListChunks returns the ids of all stored chunks which overlap with the
 // supplied time range (inclusive on both ends).
 func (s *Storage) ListChunks(startMs int64, endMs int64) ([]string, error) {
-	// TODO(dino): Actually respect the start and end times. For now, return
-	// all chunks.
-	return s.backend.list(chunkPrefix)
+	// TODO(dino): Actually respect the start and end times. For now, return all chunks.
+
+	chunkPaths, err := s.backend.list(chunkPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list chunks: %v", err)
+	}
+	results := []string{}
+	for _, path := range chunkPaths {
+		results = append(results, strings.TrimPrefix(path, chunkPrefix))
+	}
+	return results, nil
 }
 
 // LoadChunk loads the chunk with the supplied id. The returned chunk uses
 // resources which must be freed once it is no longer in use.
 func (s *Storage) LoadChunk(chunkId string) (*Chunk, error) {
-	bytes, err := s.backend.read(chunkId)
+	bytes, err := s.backend.read(chunkKey(chunkId))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read key %s: %v", chunkId, err)
+		return nil, fmt.Errorf("failed to read chunk %s: %v", chunkId, err)
 	}
 
 	chunk := &pb_almanac.Chunk{}
@@ -58,7 +67,7 @@ func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) (string, error) {
 		return "", fmt.Errorf("unable to marshal chunk proto: %v", err)
 	}
 
-	err = s.backend.write(fmt.Sprintf("%s%s", chunkPrefix, chunkId), bytes)
+	err = s.backend.write(chunkKey(chunkId), bytes)
 	if err != nil {
 		return "", fmt.Errorf("unable to write chunk bytes to backend: %v", err)
 	}
@@ -93,4 +102,8 @@ func NewGcsStorage(bucketName string) (*Storage, error) {
 		return nil, fmt.Errorf("unable to create gcs backend: %v", err)
 	}
 	return &Storage{backend}, nil
+}
+
+func chunkKey(chunkId string) string {
+	return chunkPrefix + chunkId
 }

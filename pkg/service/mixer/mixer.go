@@ -109,13 +109,12 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 		}
 
 		// Incorporate the entry into our result set (including deduping).
-		if _, ok := seen[entry.Id]; ok {
-			continue
-		}
-		seen[entry.Id] = struct{}{}
-		result = append(result, entry)
-		if len(result) >= int(request.Num) {
-			break
+		if _, ok := seen[entry.Id]; !ok {
+			seen[entry.Id] = struct{}{}
+			result = append(result, entry)
+			if len(result) >= int(request.Num) {
+				break
+			}
 		}
 
 		// Re-populate the heap if necessary.
