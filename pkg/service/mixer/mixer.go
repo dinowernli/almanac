@@ -61,7 +61,10 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 	g, _ := errgroup.WithContext(ctx)
 
 	// Compute one heap item for every appender.
-	for _, appender := range m.discovery.ListAppenders() {
+	for _, a := range m.discovery.ListAppenders() {
+		// Copy the iteration variable here because otherwise, all instances of the func below end up
+		// using the same appender because golang loop variables are by reference.
+		appender := a
 		g.Go(func() error {
 			response, err := appender.Search(ctx, request)
 			if err != nil {

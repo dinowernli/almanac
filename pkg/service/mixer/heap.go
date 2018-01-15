@@ -59,7 +59,6 @@ func (i *chunkHeapItem) key() int64 {
 		fmt.Printf("BAD: index %d but length is %d", i.idx, len(i.entries))
 	}
 
-
 	// If this is not the first item, we've loaded the entries.
 	return i.entries[i.idx].TimestampMs
 }
