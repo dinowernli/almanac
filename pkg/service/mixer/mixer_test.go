@@ -1,6 +1,9 @@
 package mixer
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"dinowernli.me/almanac/pkg/service/discovery"
@@ -23,6 +26,21 @@ func TestMixerCallsAppenders(t *testing.T) {
 	for _, appender := range appenders {
 		assert.Equal(t, 1, appender.(*fakeAppender).searchCalls)
 	}
+}
+
+func TestHttp(t *testing.T) {
+	appenders := []pb_almanac.AppenderClient{&fakeAppender{}}
+	mixer := New(logrus.New(), st.NewInMemoryStorage(), discovery.NewForTesting(appenders))
+
+	request, err := http.NewRequest("GET", "/mixer", nil)
+	assert.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	mixer.handleHttp(recorder, request)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// Cheap way to check that the template rendered correctly.
+	assert.True(t, strings.Contains(recorder.Body.String(), "Mixer"))
 }
 
 type fakeAppender struct {
