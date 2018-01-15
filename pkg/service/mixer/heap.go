@@ -9,7 +9,22 @@ import (
 	"golang.org/x/net/context"
 )
 
-// heapItem represent an entry in the heap during merging.
+// A searchHeap is a heap used to serve search requests.
+type searchHeap []heapItem
+
+func (h searchHeap) Len() int            { return len(h) }
+func (h searchHeap) Less(i, j int) bool  { return h[i].key() < h[j].key() }
+func (h searchHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
+func (h *searchHeap) Push(x interface{}) { *h = append(*h, x.(heapItem)) }
+func (h *searchHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
+// heapItem represents an entry in the heap during merging.
 type heapItem interface {
 	// key returns the key which should be used to sort this item.
 	key() int64
@@ -24,14 +39,14 @@ type heapItem interface {
 
 // chunkHeapItem is a HeapItem backed by a chunk in storage.
 type chunkHeapItem struct {
-	chunkIdProto *pb_almanac.ChunkId
+	chunkIdProto  *pb_almanac.ChunkId
 	searchRequest *pb_almanac.SearchRequest
-	ctx context.Context
-	storage *st.Storage
+	ctx           context.Context
+	storage       *st.Storage
 
 	entries []*pb_almanac.LogEntry
-	idx int
-	loaded bool
+	idx     int
+	loaded  bool
 }
 
 func (i *chunkHeapItem) key() int64 {
@@ -91,6 +106,8 @@ func (i *chunkHeapItem) ensureChunkLoaded() error {
 		return fmt.Errorf("unable to search chunk: %v", err)
 	}
 
+	// TODO(dino): Correctness relies on the entries being sorted. Make sure that's the case.
+
 	i.entries = entries
 	i.loaded = true
 	return nil
@@ -99,7 +116,7 @@ func (i *chunkHeapItem) ensureChunkLoaded() error {
 // appenderHeapItem is a HeapItem backed by an appender grpc service.
 type appenderHeapItem struct {
 	entries []*pb_almanac.LogEntry
-	idx int
+	idx     int
 }
 
 func (i *appenderHeapItem) key() int64 {
