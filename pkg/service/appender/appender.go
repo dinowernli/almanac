@@ -168,7 +168,7 @@ func (a *Appender) storeClosedChunks() {
 			continue
 		}
 
-		chunkId, err := a.storage.StoreChunk(chunkProto)
+		chunkId, err := a.storage.StoreChunk(context.TODO(), chunkProto)
 		if err != nil {
 			a.logger.WithError(err).Errorf("Failed to store chunk %v: %v", chunkProto.Id, err)
 		}

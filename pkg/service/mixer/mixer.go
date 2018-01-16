@@ -79,7 +79,7 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 
 	// Compute a heap item for every chunk whose time span overlaps with our query.
 	g.Go(func() error {
-		chunkIds, err := m.storage.ListChunks(request.StartMs, request.EndMs)
+		chunkIds, err := m.storage.ListChunks(ctx, request.StartMs, request.EndMs)
 		if err != nil {
 			return fmt.Errorf("unable to list chunks: %v", err)
 		}

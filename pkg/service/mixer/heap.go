@@ -95,7 +95,7 @@ func (i *chunkHeapItem) ensureChunkLoaded() error {
 		return fmt.Errorf("unable to compute chunk id from proto: %v", err)
 	}
 
-	chunk, err := i.storage.LoadChunk(chunkId)
+	chunk, err := i.storage.LoadChunk(i.ctx, chunkId)
 	if err != nil {
 		return fmt.Errorf("unable to load chunk %s from storage: %v", chunkId, err)
 	}

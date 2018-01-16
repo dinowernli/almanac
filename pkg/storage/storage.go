@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/golang/protobuf/proto"
-	"strings"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -24,10 +25,10 @@ type Storage struct {
 
 // ListChunks returns the ids of all stored chunks which overlap with the
 // supplied time range (inclusive on both ends).
-func (s *Storage) ListChunks(startMs int64, endMs int64) ([]string, error) {
+func (s *Storage) ListChunks(ctx context.Context, startMs int64, endMs int64) ([]string, error) {
 	// TODO(dino): Actually respect the start and end times. For now, return all chunks.
 
-	chunkPaths, err := s.backend.list(chunkPrefix)
+	chunkPaths, err := s.backend.list(ctx, chunkPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list chunks: %v", err)
 	}
@@ -40,8 +41,8 @@ func (s *Storage) ListChunks(startMs int64, endMs int64) ([]string, error) {
 
 // LoadChunk loads the chunk with the supplied id. The returned chunk uses
 // resources which must be freed once it is no longer in use.
-func (s *Storage) LoadChunk(chunkId string) (*Chunk, error) {
-	bytes, err := s.backend.read(chunkKey(chunkId))
+func (s *Storage) LoadChunk(ctx context.Context, chunkId string) (*Chunk, error) {
+	bytes, err := s.backend.read(ctx, chunkKey(chunkId))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read chunk %s: %v", chunkId, err)
 	}
@@ -56,7 +57,7 @@ func (s *Storage) LoadChunk(chunkId string) (*Chunk, error) {
 
 // StoreChunk persists the supplied chunk proto in storage. Returns the id used
 // to store the chunk.
-func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) (string, error) {
+func (s *Storage) StoreChunk(ctx context.Context, chunkProto *pb_almanac.Chunk) (string, error) {
 	chunkId, err := ChunkId(chunkProto.Id)
 	if err != nil {
 		return "", fmt.Errorf("unable to extract chunk id: %v", err)
@@ -67,7 +68,7 @@ func (s *Storage) StoreChunk(chunkProto *pb_almanac.Chunk) (string, error) {
 		return "", fmt.Errorf("unable to marshal chunk proto: %v", err)
 	}
 
-	err = s.backend.write(chunkKey(chunkId), bytes)
+	err = s.backend.write(ctx, chunkKey(chunkId), bytes)
 	if err != nil {
 		return "", fmt.Errorf("unable to write chunk bytes to backend: %v", err)
 	}
@@ -91,7 +92,7 @@ func NewDiskStorage(path string) *Storage {
 }
 
 // NewInMemoryStorage returns a storage backed by an in-memory map.
-func NewInMemoryStorage() *Storage {
+func NewMemoryStorage() *Storage {
 	return &Storage{&memoryBackend{data: map[string][]byte{}}}
 }
 

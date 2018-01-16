@@ -47,7 +47,7 @@ func CreateCluster(logger *logrus.Logger, config *Config, appenderPorts []int, a
 	var err error
 	var storage *st.Storage
 	if config.StorageType == storageTypeMemory {
-		storage = st.NewInMemoryStorage()
+		storage = st.NewMemoryStorage()
 	} else if config.StorageType == storageTypeGcs {
 		storage, err = st.NewGcsStorage(config.GcsBucket)
 		if err != nil {

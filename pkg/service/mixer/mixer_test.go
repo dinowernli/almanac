@@ -18,7 +18,7 @@ import (
 
 func TestMixerCallsAppenders(t *testing.T) {
 	appenders := []pb_almanac.AppenderClient{&fakeAppender{}, &fakeAppender{}, &fakeAppender{}, &fakeAppender{}}
-	mixer := New(logrus.New(), st.NewInMemoryStorage(), discovery.NewForTesting(appenders))
+	mixer := New(logrus.New(), st.NewMemoryStorage(), discovery.NewForTesting(appenders))
 
 	_, err := mixer.Search(context.Background(), &pb_almanac.SearchRequest{})
 	assert.NoError(t, err)
@@ -30,7 +30,7 @@ func TestMixerCallsAppenders(t *testing.T) {
 
 func TestHttp(t *testing.T) {
 	appenders := []pb_almanac.AppenderClient{&fakeAppender{}}
-	mixer := New(logrus.New(), st.NewInMemoryStorage(), discovery.NewForTesting(appenders))
+	mixer := New(logrus.New(), st.NewMemoryStorage(), discovery.NewForTesting(appenders))
 
 	request, err := http.NewRequest("GET", "/mixer", nil)
 	assert.NoError(t, err)
