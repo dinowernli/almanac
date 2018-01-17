@@ -7,12 +7,15 @@ import (
 	"dinowernli.me/almanac/pkg/index"
 	pb_almanac "dinowernli.me/almanac/proto"
 
+	"dinowernli.me/almanac/pkg/util"
 	"golang.org/x/net/context"
+	"math"
 )
 
 const (
 	chunkIdFormat    = "%d-%d-%s"
 	chunkIdSeparator = "-"
+	chunkUidLength   = 5
 )
 
 // ChunkId returns the string representation of the supplied chunk id proto.
@@ -45,6 +48,52 @@ func ChunkIdProto(chunkId string) (*pb_almanac.ChunkId, error) {
 	return &pb_almanac.ChunkId{StartMs: startMs, EndMs: endMs, Uid: uid}, nil
 }
 
+// ChunkProto is a one-stop-shop for creating a chunk proto from a set of entries.
+func ChunkProto(entries []*pb_almanac.LogEntry) (*pb_almanac.Chunk, error) {
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("cannot create chunk proto for zero entries")
+	}
+
+	idx, err := index.NewIndex()
+	if err != nil {
+		return nil, fmt.Errorf("unable to create index: %v", err)
+	}
+
+	var minMs int64 = math.MaxInt64
+	var maxMs int64 = math.MinInt64
+	for _, e := range entries {
+		if e.TimestampMs < minMs {
+			minMs = e.TimestampMs
+		}
+		if e.TimestampMs > maxMs {
+			maxMs = e.TimestampMs
+		}
+
+		err := idx.Index(e.Id, e.EntryJson)
+		if err != nil {
+			return nil, fmt.Errorf("unable to index entry: %v", err)
+		}
+	}
+
+	chunkId := &pb_almanac.ChunkId{
+		StartMs: minMs,
+		EndMs:   maxMs,
+		Uid:     NewChunkUid(),
+	}
+
+	idxProto, err := index.Serialize(idx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to serialize index: %v", err)
+	}
+
+	return &pb_almanac.Chunk{Entries: entries, Id: chunkId, Index: idxProto}, nil
+}
+
+// NewChunkId returns a string which can be used as the "uid" part of a new chunk.
+func NewChunkUid() string {
+	return util.RandomString(chunkUidLength)
+}
+
 // Chunk is an in-memory, immutable representation of a stored chunk. A chunk
 // must be closed by calling Close() once it is no longer in use.
 type Chunk struct {
@@ -57,6 +106,7 @@ type Chunk struct {
 
 // openChunk returns a chunk instance for the supplied proto. The caller is
 // responsible for calling Close() on the returned instance.
+// TODO(dino): Don't pass in the id, get it from the proto.
 func openChunk(chunkId string, chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 	idx, err := index.Deserialize(chunkProto.Index)
 	if err != nil {
