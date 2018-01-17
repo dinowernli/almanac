@@ -2,14 +2,14 @@ package storage
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"dinowernli.me/almanac/pkg/index"
+	"dinowernli.me/almanac/pkg/util"
 	pb_almanac "dinowernli.me/almanac/proto"
 
-	"dinowernli.me/almanac/pkg/util"
 	"golang.org/x/net/context"
-	"math"
 )
 
 const (
