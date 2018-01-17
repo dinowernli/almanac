@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
 	"dinowernli.me/almanac/pkg/index"
@@ -49,9 +50,19 @@ func ChunkIdProto(chunkId string) (*pb_almanac.ChunkId, error) {
 }
 
 // ChunkProto is a one-stop-shop for creating a chunk proto from a set of entries.
-func ChunkProto(entries []*pb_almanac.LogEntry) (*pb_almanac.Chunk, error) {
-	if len(entries) == 0 {
+func ChunkProto(entriesArg []*pb_almanac.LogEntry) (*pb_almanac.Chunk, error) {
+	if len(entriesArg) == 0 {
 		return nil, fmt.Errorf("cannot create chunk proto for zero entries")
+	}
+
+	var entries []*pb_almanac.LogEntry
+	if sort.IsSorted(OldestEntryFirst(entriesArg)) {
+		entries = entriesArg
+	} else {
+		// Make a copy so we don't modify the incoming entries.
+		entries = make([]*pb_almanac.LogEntry, len(entriesArg))
+		copy(entries, entriesArg)
+		sort.Sort(OldestEntryFirst(entries))
 	}
 
 	idx, err := index.NewIndex()
