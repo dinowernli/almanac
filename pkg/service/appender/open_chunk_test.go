@@ -42,6 +42,38 @@ var (
 		Id:          "id-4",
 		EntryJson:   "{\"message\": \"foo\"}",
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// TODO(DONOTMERGE) add another entry here and add a test for sorting
+
+
+
+
+
+
+
+
+
+
+
+
 )
 
 func TestEmptyChunk(t *testing.T) {

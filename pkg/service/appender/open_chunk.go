@@ -12,6 +12,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"golang.org/x/net/context"
+	"sort"
 )
 
 // openChunk holds the data for a chunk under construction.
@@ -168,11 +169,11 @@ func (c *openChunk) toProto() (*pb_almanac.Chunk, error) {
 	}
 	c.index.Close()
 
-	// TODO(dino): Currently not clear whether these need to be sorted.
 	entries := []*pb_almanac.LogEntry{}
 	for _, e := range c.entries {
 		entries = append(entries, e)
 	}
+	sort.Sort(storage.OldestEntryFirst(entries))
 
 	return &pb_almanac.Chunk{
 		Id:      c.chunkId,
