@@ -22,7 +22,7 @@ func TestStorageRoundTrip(t *testing.T) {
 	chunkProto, err := ChunkProto([]*pb_almanac.LogEntry{entry})
 	assert.NoError(t, err)
 
-	chunk, err := openChunk("some-chunk-id", chunkProto)
+	chunk, err := openChunk(chunkProto)
 	assert.NoError(t, err)
 	defer chunk.Close()
 

@@ -52,7 +52,7 @@ func (s *Storage) LoadChunk(ctx context.Context, chunkId string) (*Chunk, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal chunk %s: %v", chunkId, err)
 	}
-	return openChunk(chunkId, chunk)
+	return openChunk(chunk)
 }
 
 // StoreChunk persists the supplied chunk proto in storage. Returns the id used

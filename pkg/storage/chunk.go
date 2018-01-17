@@ -106,8 +106,12 @@ type Chunk struct {
 
 // openChunk returns a chunk instance for the supplied proto. The caller is
 // responsible for calling Close() on the returned instance.
-// TODO(dino): Don't pass in the id, get it from the proto.
-func openChunk(chunkId string, chunkProto *pb_almanac.Chunk) (*Chunk, error) {
+func openChunk(chunkProto *pb_almanac.Chunk) (*Chunk, error) {
+	chunkId, err := ChunkId(chunkProto.Id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract string id for chunk: %v", err)
+	}
+
 	idx, err := index.Deserialize(chunkProto.Index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize index from chunk %s: %v", chunkId, err)
