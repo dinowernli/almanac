@@ -42,13 +42,7 @@ func TestChunkProtoCreating(t *testing.T) {
 	chunkProto, err := ChunkProto(entriesInput)
 	assert.NoError(t, err)
 
-	// Check that the entries are sorted in the proto.
 	assert.Equal(t, 2, len(chunkProto.Entries))
-	assert.Equal(t, "id1", chunkProto.Entries[0].Id)
-	assert.Equal(t, "id2", chunkProto.Entries[1].Id)
-
-	// Check that the argument we passed in is unchanged.
-	assert.Equal(t, 2, len(entriesInput))
-	assert.Equal(t, "id2", entriesInput[0].Id)
-	assert.Equal(t, "id1", entriesInput[1].Id)
+	assert.Equal(t, "id2", chunkProto.Entries[0].Id)
+	assert.Equal(t, "id1", chunkProto.Entries[1].Id)
 }

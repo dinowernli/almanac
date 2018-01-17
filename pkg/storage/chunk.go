@@ -50,19 +50,9 @@ func ChunkIdProto(chunkId string) (*pb_almanac.ChunkId, error) {
 }
 
 // ChunkProto is a one-stop-shop for creating a chunk proto from a set of entries.
-func ChunkProto(entriesArg []*pb_almanac.LogEntry) (*pb_almanac.Chunk, error) {
-	if len(entriesArg) == 0 {
+func ChunkProto(entries []*pb_almanac.LogEntry) (*pb_almanac.Chunk, error) {
+	if len(entries) == 0 {
 		return nil, fmt.Errorf("cannot create chunk proto for zero entries")
-	}
-
-	var entries []*pb_almanac.LogEntry
-	if sort.IsSorted(OldestEntryFirst(entriesArg)) {
-		entries = entriesArg
-	} else {
-		// Make a copy so we don't modify the incoming entries.
-		entries = make([]*pb_almanac.LogEntry, len(entriesArg))
-		copy(entries, entriesArg)
-		sort.Sort(OldestEntryFirst(entries))
 	}
 
 	idx, err := index.NewIndex()
@@ -111,8 +101,7 @@ type Chunk struct {
 	id      string
 	index   *index.Index
 	entries map[string]*pb_almanac.LogEntry
-
-	// TODO(dino): Use a field to detect use-after-close bugs.
+	closed  bool
 }
 
 // openChunk returns a chunk instance for the supplied proto. The caller is
@@ -137,16 +126,23 @@ func openChunk(chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 
 // Search returns all log entries in the chunk matching the supplied query.
 func (c *Chunk) Search(ctx context.Context, query string, num int32, startMs int64, endMs int64) ([]*pb_almanac.LogEntry, error) {
+	if c.closed {
+		return nil, fmt.Errorf("cannot execute search on closed chunk")
+	}
 	return Search(ctx, c.index, c.entries, query, num, startMs, endMs)
 }
 
 // Close releases any resources associated with this chunk.
 func (c *Chunk) Close() error {
-	return c.index.Close()
+	err := c.index.Close()
+	if err != nil {
+		return fmt.Errorf("unable to close index: %v", err)
+	}
+	c.closed = true
+	return nil
 }
 
-// Search executes a search on a given index and set of entries, returning results
-// in arbitrary order.
+// Search executes a search on a given index and entry map. Results are returned in ascending order by timestamp.
 func Search(ctx context.Context, idx *index.Index, entries map[string]*pb_almanac.LogEntry, query string, num int32, startMs int64, endMs int64) ([]*pb_almanac.LogEntry, error) {
 	ids, err := idx.Search(ctx, query, num)
 	if err != nil {
@@ -167,7 +163,16 @@ func Search(ctx context.Context, idx *index.Index, entries map[string]*pb_almana
 			continue
 		}
 		result = append(result, entry)
+		if int32(len(result)) >= num {
+			break
+		}
 	}
+
+	// TODO(dino): Figure out if there is a way to get bleve to return these in sorted order.
+	if !sort.IsSorted(OldestEntryFirst(result)) {
+		sort.Sort(OldestEntryFirst(result))
+	}
+
 	return result, nil
 }
 
