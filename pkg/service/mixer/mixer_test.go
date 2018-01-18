@@ -66,9 +66,9 @@ func TestSearchNoResults(t *testing.T) {
 	// but returns no results.
 	response, err := mixer.Search(context.Background(), &pb_almanac.SearchRequest{
 		StartMs: 1,
-		EndMs: 1000,
-		Query: "baz",
-		Num: 100,
+		EndMs:   1000,
+		Query:   "baz",
+		Num:     100,
 	})
 	assert.NoError(t, err)
 	assert.Empty(t, response.Entries)
