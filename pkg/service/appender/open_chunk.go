@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -169,7 +168,6 @@ func (c *openChunk) toProto() (*pb_almanac.Chunk, error) {
 	}
 	c.index.Close()
 
-	// TODO(dino): Currently not clear whether these need to be sorted.
 	entries := []*pb_almanac.LogEntry{}
 	for _, e := range c.entries {
 		entries = append(entries, e)
@@ -186,22 +184,8 @@ func (c *openChunk) toProto() (*pb_almanac.Chunk, error) {
 // timestamp.
 func newChunkId() *pb_almanac.ChunkId {
 	return &pb_almanac.ChunkId{
-		Uid:     randomString(chunkUidLength),
+		Uid:     storage.NewChunkUid(),
 		StartMs: math.MaxInt64,
 		EndMs:   math.MinInt64,
 	}
-}
-
-// TODO(dino): Deduplicate these methods with appender.go.
-// randomString produces a random string of lower case letters.
-func randomString(num int) string {
-	bytes := make([]byte, num)
-	for i := 0; i < num; i++ {
-		bytes[i] = byte(randomInt(97, 122)) // lowercase letters.
-	}
-	return string(bytes)
-}
-
-func randomInt(min int, max int) int {
-	return min + rand.Intn(max-min)
 }

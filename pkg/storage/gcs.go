@@ -3,10 +3,17 @@ package storage
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
+)
+
+const (
+	gcsReadTimeout  = 1 * time.Second
+	gcsWriteTimeout = 1 * time.Second
+	gcsListTimeout  = 1 * time.Second
 )
 
 // newGcsBackend returns a new backend implementation backed by the supplied
@@ -23,8 +30,11 @@ type gcsBackend struct {
 	bucket *storage.BucketHandle
 }
 
-func (b *gcsBackend) read(id string) ([]byte, error) {
-	r, err := b.bucket.Object(id).NewReader(context.TODO())
+func (b *gcsBackend) read(ctx context.Context, id string) ([]byte, error) {
+	c, f := context.WithTimeout(ctx, gcsReadTimeout)
+	defer f()
+
+	r, err := b.bucket.Object(id).NewReader(c)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open reader for object %s: %v", id, err)
 	}
@@ -32,8 +42,11 @@ func (b *gcsBackend) read(id string) ([]byte, error) {
 	return ioutil.ReadAll(r)
 }
 
-func (b *gcsBackend) write(id string, contents []byte) error {
-	w := b.bucket.Object(id).NewWriter(context.TODO())
+func (b *gcsBackend) write(ctx context.Context, id string, contents []byte) error {
+	c, f := context.WithTimeout(ctx, gcsWriteTimeout)
+	defer f()
+
+	w := b.bucket.Object(id).NewWriter(c)
 	defer w.Close()
 
 	_, err := w.Write(contents)
@@ -43,9 +56,11 @@ func (b *gcsBackend) write(id string, contents []byte) error {
 	return nil
 }
 
-func (b *gcsBackend) list(prefix string) ([]string, error) {
-	it := b.bucket.Objects(context.TODO(), &storage.Query{Prefix: prefix})
+func (b *gcsBackend) list(ctx context.Context, prefix string) ([]string, error) {
+	c, f := context.WithTimeout(ctx, gcsListTimeout)
+	defer f()
 
+	it := b.bucket.Objects(c, &storage.Query{Prefix: prefix})
 	result := []string{}
 	for {
 		attributes, err := it.Next()

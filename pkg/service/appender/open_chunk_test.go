@@ -22,25 +22,25 @@ var (
 	initialEntry = &pb_almanac.LogEntry{
 		TimestampMs: 200,
 		Id:          "id-initial",
-		EntryJson:   "{\"message\": \"foo\"}",
+		EntryJson:   `{"message": "foo"}`,
 	}
 
 	entry2 = &pb_almanac.LogEntry{
 		TimestampMs: 400,
 		Id:          "id-2",
-		EntryJson:   "{\"message\": \"foo\"}",
+		EntryJson:   `{"message": "foo"}`,
 	}
 
 	entry3 = &pb_almanac.LogEntry{
 		TimestampMs: 600,
 		Id:          "id-3",
-		EntryJson:   "{\"message\": \"foo\"}",
+		EntryJson:   `{"message": "foo"}`,
 	}
 
 	entry4 = &pb_almanac.LogEntry{
 		TimestampMs: 800000,
 		Id:          "id-4",
-		EntryJson:   "{\"message\": \"foo\"}",
+		EntryJson:   `{"message": "foo"}`,
 	}
 )
 

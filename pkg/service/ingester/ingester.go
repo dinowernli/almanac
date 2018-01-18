@@ -3,12 +3,12 @@ package ingester
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"time"
 
 	almHttp "dinowernli.me/almanac/pkg/http"
 	dc "dinowernli.me/almanac/pkg/service/discovery"
+	"dinowernli.me/almanac/pkg/util"
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/sirupsen/logrus"
@@ -170,19 +170,5 @@ func extractEntry(rawJson string) (*pb_almanac.LogEntry, error) {
 // ids have the property that sorting them lexicographically orders them by
 // timestamp, but that no two different entries ever end up with the same id.
 func newEntryId(timestampMs int64) string {
-	return fmt.Sprintf("%d-%s", timestampMs, randomString(3))
-}
-
-// TODO(dino): Deduplicate these methods with appender.go.
-// randomString produces a random string of lower case letters.
-func randomString(num int) string {
-	bytes := make([]byte, num)
-	for i := 0; i < num; i++ {
-		bytes[i] = byte(randomInt(97, 122)) // lowercase letters.
-	}
-	return string(bytes)
-}
-
-func randomInt(min int, max int) int {
-	return min + rand.Intn(max-min)
+	return fmt.Sprintf("%d-%s", timestampMs, util.RandomString(3))
 }
