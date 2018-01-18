@@ -30,6 +30,7 @@ type heapItem interface {
 	key() int64
 
 	// entry returns the current log entry associated with this item.
+	// Returns nil if there is no current entry.
 	entry() (*pb_almanac.LogEntry, error)
 
 	// next returns a heapItem which goes back into the heap once this
@@ -63,6 +64,9 @@ func (i *chunkHeapItem) entry() (*pb_almanac.LogEntry, error) {
 	err := i.ensureChunkLoaded()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load chunk from 'entry': %v", err)
+	}
+	if i.idx >= len(i.entries) {
+		return nil, nil
 	}
 	return i.entries[i.idx], nil
 }

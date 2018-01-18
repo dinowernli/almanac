@@ -110,6 +110,10 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 			logger.WithError(err).Warnf("Failed")
 			return nil, err
 		}
+		if entry == nil {
+			// This can happen if the entire chunk has no entries to offer at all. Abandon this chunk.
+			continue
+		}
 
 		// Incorporate the entry into our result set (including deduping).
 		if _, ok := seen[entry.Id]; !ok {

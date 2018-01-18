@@ -16,6 +16,14 @@ import (
 	"google.golang.org/grpc"
 )
 
+var (
+	entry1 = &pb_almanac.LogEntry{
+		Id:          "id1",
+		EntryJson:   `{ "message": "foo" }`,
+		TimestampMs: int64(100),
+	}
+)
+
 func TestMixerCallsAppenders(t *testing.T) {
 	appenders := []pb_almanac.AppenderClient{&fakeAppender{}, &fakeAppender{}, &fakeAppender{}, &fakeAppender{}}
 	mixer := New(logrus.New(), st.NewMemoryStorage(), discovery.NewForTesting(appenders))
@@ -41,6 +49,29 @@ func TestHttp(t *testing.T) {
 
 	// Cheap way to check that the template rendered correctly.
 	assert.True(t, strings.Contains(recorder.Body.String(), "Mixer"))
+}
+
+func TestSearchNoResults(t *testing.T) {
+	chunk, err := st.ChunkProto([]*pb_almanac.LogEntry{entry1})
+	assert.NoError(t, err)
+
+	storage := st.NewMemoryStorage()
+	_, err = storage.StoreChunk(context.Background(), chunk)
+	assert.NoError(t, err)
+
+	appenders := []pb_almanac.AppenderClient{&fakeAppender{}}
+	mixer := New(logrus.New(), storage, discovery.NewForTesting(appenders))
+
+	// Search for a different term than what's in the chunk, such that the chunk gets searched
+	// but returns no results.
+	response, err := mixer.Search(context.Background(), &pb_almanac.SearchRequest{
+		StartMs: 1,
+		EndMs:   1000,
+		Query:   "baz",
+		Num:     100,
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, response.Entries)
 }
 
 type fakeAppender struct {
