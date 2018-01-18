@@ -60,7 +60,7 @@ func TestSearchNoResults(t *testing.T) {
 	assert.NoError(t, err)
 
 	appenders := []pb_almanac.AppenderClient{&fakeAppender{}}
-	mixer := New(logrus.New(), st.NewMemoryStorage(), discovery.NewForTesting(appenders))
+	mixer := New(logrus.New(), storage, discovery.NewForTesting(appenders))
 
 	// Search for a different term than what's in the chunk, such that the chunk gets searched
 	// but returns no results.
