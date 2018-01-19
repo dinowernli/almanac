@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"dinowernli.me/almanac/pkg/cluster"
 	pb_almanac "dinowernli.me/almanac/proto"
@@ -23,6 +24,8 @@ var (
 		SmallChunkMaxEntries: 10,
 		SmallChunkSpreadMs:   5000,
 		SmallChunkMaxAgeMs:   3000,
+
+		JanitorCompactionInterval: 10 * time.Second,
 
 		StorageType: "memory",
 		GcsBucket:   "",

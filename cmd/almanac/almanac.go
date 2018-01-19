@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"dinowernli.me/almanac/pkg/cluster"
 	pb_almanac "dinowernli.me/almanac/proto"
@@ -21,23 +22,27 @@ var (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	kingpin.Parse()
 	logger := logrus.New()
 	logger.Out = os.Stderr
 
 	appenderFanout := 2
 	httpPort := 12345
-
 	conf := &cluster.Config{
 		SmallChunkMaxEntries: 10,
 		SmallChunkSpreadMs:   5000,
 		SmallChunkMaxAgeMs:   3000,
 
+		JanitorCompactionInterval: 10 * time.Second,
+
 		StorageType: *flagStorageType,
 		GcsBucket:   *flagGcsBucket,
 	}
 
-	cluster, err := cluster.CreateCluster(logger, conf, appenderPorts, appenderFanout)
+	cluster, err := cluster.CreateCluster(ctx, logger, conf, appenderPorts, appenderFanout)
 	if err != nil {
 		panic(err)
 	}

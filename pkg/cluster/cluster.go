@@ -3,15 +3,18 @@ package cluster
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"dinowernli.me/almanac/pkg/service/appender"
 	dc "dinowernli.me/almanac/pkg/service/discovery"
 	in "dinowernli.me/almanac/pkg/service/ingester"
+	"dinowernli.me/almanac/pkg/service/janitor"
 	mx "dinowernli.me/almanac/pkg/service/mixer"
 	st "dinowernli.me/almanac/pkg/storage"
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -26,6 +29,8 @@ type Config struct {
 	SmallChunkSpreadMs   int64
 	SmallChunkMaxAgeMs   int64
 
+	JanitorCompactionInterval time.Duration
+
 	StorageType string
 	GcsBucket   string
 }
@@ -35,6 +40,7 @@ type LocalCluster struct {
 	Mixer    *mx.Mixer
 	Ingester *in.Ingester
 
+	Janitor   *janitor.Janitor
 	Appenders []*appender.Appender
 	Storage   *st.Storage
 	Discovery *dc.Discovery
@@ -43,7 +49,7 @@ type LocalCluster struct {
 }
 
 // CreateCluster sets up a test cluster, including all services required to run the system.
-func CreateCluster(logger *logrus.Logger, config *Config, appenderPorts []int, appenderFanout int) (*LocalCluster, error) {
+func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, appenderPorts []int, appenderFanout int) (*LocalCluster, error) {
 	var err error
 	var storage *st.Storage
 	if config.StorageType == storageTypeMemory {
@@ -87,9 +93,12 @@ func CreateCluster(logger *logrus.Logger, config *Config, appenderPorts []int, a
 		return nil, fmt.Errorf("unable to create ingester: %v", err)
 	}
 
+	janitor := janitor.New(ctx, logger, storage, config.JanitorCompactionInterval)
+
 	return &LocalCluster{
 		Appenders: appenders,
 		Ingester:  ingester,
+		Janitor:   janitor,
 		Storage:   storage,
 		Discovery: discovery,
 		Mixer:     mx.New(logger, storage, discovery),
