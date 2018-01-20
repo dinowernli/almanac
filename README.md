@@ -6,10 +6,10 @@
 A distributed log storage and serving system.
 
 Design goals:
-* Easy to run using cloud providers for the machines (e.g., GCE) and storage (e.g., GCS).
-* Does not require looking after a resilient and fault-tolerant storage system.
-* Simple cluster management because the system uses disk and memory solely for caching.
-* System cost scales with usage rather than uptime.
+* Easy to deploy on cloud infrastructure such as GCP or AWS.
+* Minimal operational burden, i.e., deployments should be easy to upgrade, restart, modify, etc.
+* System cost scales with usage rather than uptime, making the system viable for small and large deployments.
+* Does not require operating a resilient and fault-tolerant storage system.
 
 ## Design
 
