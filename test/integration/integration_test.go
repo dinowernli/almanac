@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"dinowernli.me/almanac/pkg/cluster"
 	pb_almanac "dinowernli.me/almanac/proto"
@@ -23,6 +24,8 @@ var (
 		SmallChunkMaxEntries: 10,
 		SmallChunkSpreadMs:   5000,
 		SmallChunkMaxAgeMs:   3000,
+
+		JanitorCompactionInterval: 10 * time.Second,
 
 		StorageType: "memory",
 		GcsBucket:   "",
@@ -163,7 +166,7 @@ func TestQueryRange(t *testing.T) {
 }
 
 func createTestCluster(t *testing.T) *cluster.LocalCluster {
-	c, err := cluster.CreateCluster(logrus.New(), testConf, getAppenderPorts(), appenderFanout)
+	c, err := cluster.CreateCluster(context.Background(), logrus.New(), testConf, getAppenderPorts(), appenderFanout)
 	assert.NoError(t, err)
 	return c
 }
