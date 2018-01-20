@@ -166,7 +166,7 @@ func TestQueryRange(t *testing.T) {
 }
 
 func createTestCluster(t *testing.T) *cluster.LocalCluster {
-	c, err := cluster.CreateCluster(logrus.New(), testConf, getAppenderPorts(), appenderFanout)
+	c, err := cluster.CreateCluster(context.Background(), logrus.New(), testConf, getAppenderPorts(), appenderFanout)
 	assert.NoError(t, err)
 	return c
 }
