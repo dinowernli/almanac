@@ -9,6 +9,7 @@ Design goals:
 * Easy to run using cloud providers for the machines (e.g., GCE) and storage (e.g., GCS).
 * Does not require looking after a resilient and fault-tolerant storage system.
 * Simple cluster management because the system uses disk and memory solely for caching.
+* System cost scales with usage rather than uptime.
 
 ## Design
 
