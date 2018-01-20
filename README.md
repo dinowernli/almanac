@@ -12,7 +12,7 @@ Design goals:
 
 ## Design
 
-TODO(dino) link to doc.
+The design doc for the system can be found [here](https://docs.google.com/document/d/1yVTRtSZQ2ulSV9CGwExn2l2E2kJqyssCMB7ZM7FNhnc/edit). As parts of the design go from being under discussion to being more consolidated, the design will gradually move into markdown in this repo.
 
 ## Building and running
 
