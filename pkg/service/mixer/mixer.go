@@ -164,7 +164,8 @@ func (m *Mixer) handleHttp(writer http.ResponseWriter, request *http.Request) {
 		EndMs:   almHttp.ParseTimestamp(pageData.FormEndMs, 0),
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), httpSearchTimeoutMs*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), httpSearchTimeoutMs*time.Millisecond)
+	defer cancel()
 	pageData.Response, pageData.Error = m.Search(ctx, pageData.Request)
 
 	err := pageData.Render(writer)
