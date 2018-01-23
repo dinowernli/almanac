@@ -20,6 +20,13 @@ body {
   margin: 20px;
 }
 
+.entry-input {
+  min-height: 200px;
+  min-width: 300px;
+  display: block;
+  font-family: monospace;
+}
+
 </style>
 
 <body>
@@ -28,7 +35,7 @@ body {
 
     <div>
     <form action="/ingester" method="post">
-      Content: <input type="text" name="c" value="{{.FormContent}}">
+      Content: <textarea name="c" class="entry-input">{{.FormContent}}</textarea>
       <input type="submit" value="Ingest">
     </form>
     </div>
