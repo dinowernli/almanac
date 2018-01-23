@@ -144,7 +144,12 @@ func (c *openChunk) close() {
 		return
 	}
 
-	c.closeTimer.Stop()
+	// In very rare cases (where the timer triggers before it gets stored, the
+	// stored time could be nil. Catch that case here.
+	if c.closeTimer != nil {
+		c.closeTimer.Stop()
+	}
+
 	c.closed = true
 
 	go func() {
