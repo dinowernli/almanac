@@ -47,7 +47,7 @@ func NewIndex() (*Index, error) {
 // entries which match the search.
 func (i *Index) Search(ctx context.Context, query string, num int32) ([]string, error) {
 	request := bleve.NewSearchRequestOptions(
-		bleve.NewMatchQuery(query),
+		bleve.NewQueryStringQuery(query),
 		int(num),
 		0,     // from
 		false) // explain
