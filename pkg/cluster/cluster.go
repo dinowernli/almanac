@@ -29,6 +29,8 @@ type Config struct {
 	SmallChunkSpread     time.Duration
 	SmallChunkMaxAge     time.Duration
 
+	BigChunkMaxSpread time.Duration
+
 	JanitorCompactionInterval time.Duration
 
 	StorageType string
@@ -93,7 +95,10 @@ func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, a
 		return nil, fmt.Errorf("unable to create ingester: %v", err)
 	}
 
-	janitor := janitor.New(ctx, logger, storage, config.JanitorCompactionInterval)
+	janitor, err := janitor.New(ctx, logger, storage, config.JanitorCompactionInterval, config.BigChunkMaxSpread)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create janitor: %v", err)
+	}
 
 	return &LocalCluster{
 		Appenders: appenders,

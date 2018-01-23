@@ -24,6 +24,7 @@ var (
 		SmallChunkMaxEntries: 10,
 		SmallChunkSpread:     5 * time.Second,
 		SmallChunkMaxAge:     3 * time.Second,
+		BigChunkMaxSpread:    4 * time.Hour,
 
 		JanitorCompactionInterval: 10 * time.Second,
 
