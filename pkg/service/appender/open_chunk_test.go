@@ -7,11 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
+	"time"
 )
 
 const (
 	maxEntries  = 3
-	maxSpreadMs = 1500
+	maxSpreadMs = 1500 * time.Millisecond
 
 	// Chosen to be very high so that this doesn't trigger closing for the default
 	// test setup. That way, if we fail to close a chunk, the test will time out.

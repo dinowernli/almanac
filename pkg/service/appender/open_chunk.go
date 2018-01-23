@@ -103,7 +103,9 @@ func (c *openChunk) tryAdd(entry *pb_almanac.LogEntry) (bool, error) {
 	if entry.TimestampMs > newEndMs {
 		newEndMs = entry.TimestampMs
 	}
-	if time.Duration(newEndMs-newStartMs)*time.Millisecond > c.maxSpread {
+
+	spread := time.Duration(newEndMs-newStartMs) * time.Millisecond
+	if spread > c.maxSpread {
 		return false, nil
 	}
 
