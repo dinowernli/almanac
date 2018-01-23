@@ -22,6 +22,14 @@ const (
 	httpIngestTimeoutMs = 300
 	urlParamContent     = "c"
 
+	httpExampleEntry = `
+{
+	"message": "foo",
+	"timestamp_ms": 12345,
+	"logger": "MyAwesomeLogger"
+}
+`
+
 	timestampField = "timestamp_ms"
 	nanosPerMilli  = 1000000
 )
@@ -120,11 +128,16 @@ func (i *Ingester) selectAppenders() ([]pb_almanac.AppenderClient, error) {
 func (i *Ingester) handleHttp(writer http.ResponseWriter, request *http.Request) {
 	pageData := &almHttp.IngesterData{FormContent: request.FormValue(urlParamContent)}
 	if pageData.FormContent != "" {
-		ctx, _ := context.WithTimeout(context.Background(), httpIngestTimeoutMs*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), httpIngestTimeoutMs*time.Millisecond)
+		defer cancel()
+
 		_, pageData.Error = i.Ingest(ctx, &pb_almanac.IngestRequest{EntryJson: pageData.FormContent})
 		if pageData.Error == nil {
 			pageData.Result = "Successfully ingested entry"
 		}
+	} else {
+		// Populate the form with some example data.
+		pageData.FormContent = httpExampleEntry
 	}
 
 	err := pageData.Render(writer)
