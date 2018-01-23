@@ -25,18 +25,17 @@ type openChunk struct {
 	sinkChannel chan *openChunk
 	mutex       *sync.Mutex
 
-	maxEntries    int
-	maxSpreadMs   int64
-	maxOpenTimeMs int64
+	maxEntries int
+	maxSpread  time.Duration
 }
 
 // newOpenChunk creates a new openChunk instance containing the supplied log entry.
 //
 // - maxEntries is the maximum number of entries in this chunk before it gets closed.
-// - maxSpreadMs is the maximum difference between the smallest and largest timestamp of entries in this chunk.
+// - maxSpread is the maximum difference between the smallest and largest timestamp of entries in this chunk.
 // - maxOpenTimeMs is a maximum duration for which the chunk will stay open.
 // - sinkChannel is a channel the open chunk gets sent into once it is closed.
-func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64, maxOpenTimeMs int64, sinkChannel chan *openChunk) (*openChunk, error) {
+func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpread time.Duration, maxOpenTime time.Duration, sinkChannel chan *openChunk) (*openChunk, error) {
 	index, err := index.NewIndex()
 	if err != nil {
 		return nil, fmt.Errorf("unable to create index: %v", err)
@@ -51,9 +50,8 @@ func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64,
 		sinkChannel: sinkChannel,
 		mutex:       &sync.Mutex{},
 
-		maxEntries:    maxEntries,
-		maxSpreadMs:   maxSpreadMs,
-		maxOpenTimeMs: maxOpenTimeMs,
+		maxEntries: maxEntries,
+		maxSpread:  maxSpread,
 	}
 
 	// Add the first entry.
@@ -67,7 +65,7 @@ func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64,
 	}
 
 	// Make sure we respect the maximum lifetime of the open chunk.
-	result.closeTimer = time.AfterFunc(time.Duration(maxOpenTimeMs)*time.Millisecond, result.close)
+	result.closeTimer = time.AfterFunc(maxOpenTime, result.close)
 
 	return result, nil
 }
@@ -103,7 +101,9 @@ func (c *openChunk) tryAdd(entry *pb_almanac.LogEntry) (bool, error) {
 	if entry.TimestampMs > newEndMs {
 		newEndMs = entry.TimestampMs
 	}
-	if newEndMs-newStartMs > c.maxSpreadMs {
+
+	spread := time.Duration(newEndMs-newStartMs) * time.Millisecond
+	if spread > c.maxSpread {
 		return false, nil
 	}
 
@@ -144,7 +144,12 @@ func (c *openChunk) close() {
 		return
 	}
 
-	c.closeTimer.Stop()
+	// In very rare cases (where the timer triggers before it gets stored, the
+	// stored time could be nil. Catch that case here.
+	if c.closeTimer != nil {
+		c.closeTimer.Stop()
+	}
+
 	c.closed = true
 
 	go func() {

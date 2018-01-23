@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"dinowernli.me/almanac/pkg/cluster"
 	pb_almanac "dinowernli.me/almanac/proto"
@@ -18,7 +17,16 @@ var (
 	flagStorageType = kingpin.Flag("storage", "Which kind of storage to use").Default("memory").Enum("memory", "gcs")
 	flagGcsBucket   = kingpin.Flag("gcs.bucket", "Which gcs bucket to use for storage").Default("almanac-dev").String()
 
-	appenderPorts = []int{5001, 5002, 5003, 5004, 5005}
+	flagAppenderPorts = kingpin.Flag("appender_ports", "Which ports to run appenders on").Default("5001", "5002", "5003", "5004", "5005").Ints()
+	flagHttpPort      = kingpin.Flag("http_port", "which port to run the http server on").Default("12345").Int()
+
+	flagIngestFanout         = kingpin.Flag("ingest_fanout", "How many appenders to send each ingested entry to").Default("2").Int()
+	flagSmallChunkMaxEntries = kingpin.Flag("small_chunk_max_entries", "The maximum number of entries in a small chunk").Default("10").Int()
+	flagSmallChunkMaxSpread  = kingpin.Flag("small_chunk_max_spread", "The maximum spread of a small chunk").Default("5s").Duration()
+	flagSmallChunkMaxAge     = kingpin.Flag("small_chunk_max_age", "The maximum time a small chunk can stay open").Default("3s").Duration()
+	flagBigChunkMaxSpread    = kingpin.Flag("big_chunk_max_spread", "The maximum spread of a big chunk").Default("12h").Duration()
+
+	flagJanitorCompactionInterval = kingpin.Flag("janitor_compaction_interval", "How frequently the janitor runs compactions").Default("10s").Duration()
 )
 
 func main() {
@@ -29,31 +37,30 @@ func main() {
 	logger := logrus.New()
 	logger.Out = os.Stderr
 
-	appenderFanout := 2
-	httpPort := 12345
 	conf := &cluster.Config{
-		SmallChunkMaxEntries: 10,
-		SmallChunkSpreadMs:   5000,
-		SmallChunkMaxAgeMs:   3000,
+		SmallChunkMaxEntries: *flagSmallChunkMaxEntries,
+		SmallChunkSpread:     *flagSmallChunkMaxSpread,
+		SmallChunkMaxAge:     *flagSmallChunkMaxAge,
+		BigChunkMaxSpread:    *flagBigChunkMaxSpread,
 
-		JanitorCompactionInterval: 10 * time.Second,
+		JanitorCompactionInterval: *flagJanitorCompactionInterval,
 
 		StorageType: *flagStorageType,
 		GcsBucket:   *flagGcsBucket,
 	}
 
-	cluster, err := cluster.CreateCluster(ctx, logger, conf, appenderPorts, appenderFanout)
+	cluster, err := cluster.CreateCluster(ctx, logger, conf, *flagAppenderPorts, *flagIngestFanout)
 	if err != nil {
 		panic(err)
 	}
 
-	ingestRequest1 := newIngestRequest("{ \"message\": \"foo\", \"timestamp_ms\": 5000 }")
+	ingestRequest1 := &pb_almanac.IngestRequest{EntryJson: `{ "message": "foo", "timestamp_ms": 5000 }`}
 	_, err = cluster.Ingester.Ingest(context.Background(), ingestRequest1)
 	if err != nil {
 		panic(err)
 	}
 
-	ingestRequest2 := newIngestRequest("{ \"message\": \"foo\", \"timestamp_ms\": 5007 }")
+	ingestRequest2 := &pb_almanac.IngestRequest{EntryJson: `{ "message": "foo", "timestamp_ms": 5007 }`}
 	_, err = cluster.Ingester.Ingest(context.Background(), ingestRequest2)
 	if err != nil {
 		panic(err)
@@ -62,14 +69,10 @@ func main() {
 	mux := http.NewServeMux()
 
 	cluster.Mixer.RegisterHttp(mux)
-	logger.Infof("Started mixer at http://localhost:%d/mixer", httpPort)
+	logger.Infof("Started mixer at http://localhost:%d/mixer", *flagHttpPort)
 
 	cluster.Ingester.RegisterHttp(mux)
-	logger.Infof("Started ingester at http://localhost:%d/ingester", httpPort)
+	logger.Infof("Started ingester at http://localhost:%d/ingester", *flagHttpPort)
 
-	http.ListenAndServe(fmt.Sprintf(":%d", httpPort), mux)
-}
-
-func newIngestRequest(json string) *pb_almanac.IngestRequest {
-	return &pb_almanac.IngestRequest{EntryJson: json}
+	http.ListenAndServe(fmt.Sprintf(":%d", *flagHttpPort), mux)
 }
