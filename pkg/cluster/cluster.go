@@ -27,7 +27,7 @@ const (
 type Config struct {
 	SmallChunkMaxEntries int
 	SmallChunkSpread     time.Duration
-	SmallChunkMaxAgeMs   int64
+	SmallChunkMaxAge     time.Duration
 
 	JanitorCompactionInterval time.Duration
 
@@ -67,7 +67,7 @@ func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, a
 	servers := []*grpc.Server{}
 	appenderAddresses := []string{}
 	for _, port := range appenderPorts {
-		appender, err := appender.New(logger, storage, config.SmallChunkMaxEntries, config.SmallChunkSpread, config.SmallChunkMaxAgeMs)
+		appender, err := appender.New(logger, storage, config.SmallChunkMaxEntries, config.SmallChunkSpread, config.SmallChunkMaxAge)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create appender %d: %v", port, err)
 		}

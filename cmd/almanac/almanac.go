@@ -23,6 +23,7 @@ var (
 	flagIngestFanout         = kingpin.Flag("ingest_fanout", "How many appenders to send each ingested entry to").Default("2").Int()
 	flagSmallChunkMaxEntries = kingpin.Flag("small_chunk_max_entries", "The maximum number of entries in a small chunk").Default("10").Int()
 	flagSmallChunkMaxSpread  = kingpin.Flag("small_chunk_max_spread", "The maximum spread of a small chunk").Default("5s").Duration()
+	flagSmallChunkMaxAge     = kingpin.Flag("small_chunk_max_spread", "The maximum time a small chunk can stay open").Default("3s").Duration()
 
 	flagJanitorCompactionInterval = kingpin.Flag("janitor_compaction_interval", "How frequently the janitor runs compactions").Default("10s").Duration()
 )
@@ -38,7 +39,7 @@ func main() {
 	conf := &cluster.Config{
 		SmallChunkMaxEntries: *flagSmallChunkMaxEntries,
 		SmallChunkSpread:     *flagSmallChunkMaxSpread,
-		SmallChunkMaxAgeMs:   3000,
+		SmallChunkMaxAge:     *flagSmallChunkMaxAge,
 
 		JanitorCompactionInterval: *flagJanitorCompactionInterval,
 

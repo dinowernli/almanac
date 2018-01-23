@@ -2,21 +2,21 @@ package appender
 
 import (
 	"testing"
+	"time"
 
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-	"time"
 )
 
 const (
-	maxEntries  = 3
-	maxSpreadMs = 1500 * time.Millisecond
+	maxEntries = 3
+	maxSpread  = 1500 * time.Millisecond
 
 	// Chosen to be very high so that this doesn't trigger closing for the default
 	// test setup. That way, if we fail to close a chunk, the test will time out.
-	maxOpenTimeMs = 100000
+	maxOpenTime = 100 * time.Second
 )
 
 var (
@@ -127,7 +127,7 @@ func TestRejectsEntryDueToSpread(t *testing.T) {
 
 func TestAutoCloses(t *testing.T) {
 	sink := make(chan *openChunk)
-	c, err := newOpenChunk(initialEntry, maxEntries, maxSpreadMs, 10 /* maxOpenTimeMs */, sink)
+	c, err := newOpenChunk(initialEntry, maxEntries, maxSpread, 10 /* maxOpenTimeMs */, sink)
 	assert.NoError(t, err)
 
 	// Make sure that the chunk is closed.
@@ -137,7 +137,7 @@ func TestAutoCloses(t *testing.T) {
 
 func newChunk(t *testing.T) (*openChunk, chan *openChunk) {
 	sink := make(chan *openChunk)
-	c, err := newOpenChunk(initialEntry, maxEntries, maxSpreadMs, maxOpenTimeMs, sink)
+	c, err := newOpenChunk(initialEntry, maxEntries, maxSpread, maxOpenTime, sink)
 	assert.NoError(t, err)
 	return c, sink
 }
