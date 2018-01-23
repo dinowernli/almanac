@@ -33,23 +33,23 @@ var (
 // Ingester is an implementation of the ingester service. It accepts log
 // entries entering the system and fans them out to appenders.
 type Ingester struct {
-	logger         *logrus.Logger
-	discovery      *dc.Discovery
-	appenderFanout int
+	logger       *logrus.Logger
+	discovery    *dc.Discovery
+	ingestFanout int
 }
 
 // New returns a new Ingester backed by the supplied service discovery.
 // appenderFanout specifies how many appenders this ingester tries to inform of
 // a new log entry before declaring the entry ingested into the system.
-func New(logger *logrus.Logger, discovery *dc.Discovery, appenderFanout int) (*Ingester, error) {
-	if appenderFanout < 1 {
-		return nil, fmt.Errorf("appenderFanout must be at least 1")
+func New(logger *logrus.Logger, discovery *dc.Discovery, ingestFanout int) (*Ingester, error) {
+	if ingestFanout < 1 {
+		return nil, fmt.Errorf("ingestFanout must be at least 1")
 	}
 
 	return &Ingester{
-		logger:         logger,
-		discovery:      discovery,
-		appenderFanout: appenderFanout,
+		logger:       logger,
+		discovery:    discovery,
+		ingestFanout: ingestFanout,
 	}, nil
 }
 
@@ -106,14 +106,14 @@ func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest
 // sent to.
 func (i *Ingester) selectAppenders() ([]pb_almanac.AppenderClient, error) {
 	allAppenders := i.discovery.ListAppenders()
-	if i.appenderFanout > len(allAppenders) {
-		return nil, fmt.Errorf("cannot select %d appenders from a list of size %d", i.appenderFanout, len(allAppenders))
+	if i.ingestFanout > len(allAppenders) {
+		return nil, fmt.Errorf("cannot select %d appenders from a list of size %d", i.ingestFanout, len(allAppenders))
 	}
 
 	// TODO(dino): Consider remembering the appenders last used and trying to find them.
 	// Shuffle the first time so that different ingesters use different subsets of appenders.
 
-	return allAppenders[0:i.appenderFanout], nil
+	return allAppenders[0:i.ingestFanout], nil
 }
 
 // handleHttp serves a web page which can be used to ingest entries on this ingester.

@@ -22,7 +22,7 @@ const (
 var (
 	testConf = &cluster.Config{
 		SmallChunkMaxEntries: 10,
-		SmallChunkSpreadMs:   5000,
+		SmallChunkSpread:     5000,
 		SmallChunkMaxAgeMs:   3000,
 
 		JanitorCompactionInterval: 10 * time.Second,

@@ -26,17 +26,17 @@ type openChunk struct {
 	mutex       *sync.Mutex
 
 	maxEntries    int
-	maxSpreadMs   int64
+	maxSpread     time.Duration
 	maxOpenTimeMs int64
 }
 
 // newOpenChunk creates a new openChunk instance containing the supplied log entry.
 //
 // - maxEntries is the maximum number of entries in this chunk before it gets closed.
-// - maxSpreadMs is the maximum difference between the smallest and largest timestamp of entries in this chunk.
+// - maxSpread is the maximum difference between the smallest and largest timestamp of entries in this chunk.
 // - maxOpenTimeMs is a maximum duration for which the chunk will stay open.
 // - sinkChannel is a channel the open chunk gets sent into once it is closed.
-func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64, maxOpenTimeMs int64, sinkChannel chan *openChunk) (*openChunk, error) {
+func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpread time.Duration, maxOpenTimeMs int64, sinkChannel chan *openChunk) (*openChunk, error) {
 	index, err := index.NewIndex()
 	if err != nil {
 		return nil, fmt.Errorf("unable to create index: %v", err)
@@ -52,7 +52,7 @@ func newOpenChunk(entry *pb_almanac.LogEntry, maxEntries int, maxSpreadMs int64,
 		mutex:       &sync.Mutex{},
 
 		maxEntries:    maxEntries,
-		maxSpreadMs:   maxSpreadMs,
+		maxSpread:     maxSpread,
 		maxOpenTimeMs: maxOpenTimeMs,
 	}
 
@@ -103,7 +103,7 @@ func (c *openChunk) tryAdd(entry *pb_almanac.LogEntry) (bool, error) {
 	if entry.TimestampMs > newEndMs {
 		newEndMs = entry.TimestampMs
 	}
-	if newEndMs-newStartMs > c.maxSpreadMs {
+	if time.Duration(newEndMs-newStartMs)*time.Millisecond > c.maxSpread {
 		return false, nil
 	}
 

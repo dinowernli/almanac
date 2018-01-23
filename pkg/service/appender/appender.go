@@ -15,10 +15,6 @@ import (
 )
 
 const (
-	// The number of random characters appended to chunk ids to make sure that
-	// chunk ids are globally unique.
-	chunkUidLength = 5
-
 	// The time during which closed chunks are kept in memory even after writing
 	// them out to storage. This should be longer than the typical time it takes
 	// to serve a serach request on a mixer.
@@ -43,17 +39,17 @@ type Appender struct {
 	closedChunksChan chan *openChunk
 
 	maxChunkEntries    int
-	maxChunkSpreadMs   int64
+	maxChunkSpread     time.Duration
 	maxChunkOpenTimeMs int64
 }
 
 // New returns a new appender backed by the supplied storage.
-func New(logger *logrus.Logger, storage *storage.Storage, maxChunkEntries int, maxChunkSpreadMs int64, maxChunkOpenTimeMs int64) (*Appender, error) {
+func New(logger *logrus.Logger, storage *storage.Storage, maxChunkEntries int, maxChunkSpread time.Duration, maxChunkOpenTimeMs int64) (*Appender, error) {
 	if maxChunkEntries < 1 {
 		return nil, fmt.Errorf("max entries per chunk must be greater than 0, but got %d", maxChunkEntries)
 	}
-	if maxChunkSpreadMs <= 0 {
-		return nil, fmt.Errorf("must have positive chunk spread, but got: %d", maxChunkSpreadMs)
+	if maxChunkSpread <= 0 {
+		return nil, fmt.Errorf("must have positive chunk spread, but got: %d", maxChunkSpread)
 	}
 	if maxChunkOpenTimeMs <= 0 {
 		return nil, fmt.Errorf("must have positive max chunk open time, but got: %d", maxChunkOpenTimeMs)
@@ -68,7 +64,7 @@ func New(logger *logrus.Logger, storage *storage.Storage, maxChunkEntries int, m
 		closedChunksChan: make(chan *openChunk),
 
 		maxChunkEntries:    maxChunkEntries,
-		maxChunkSpreadMs:   maxChunkSpreadMs,
+		maxChunkSpread:     maxChunkSpread,
 		maxChunkOpenTimeMs: maxChunkOpenTimeMs,
 	}
 
@@ -142,7 +138,7 @@ func (a *Appender) Append(ctx context.Context, request *pb_almanac.AppendRequest
 
 	// Open a new chunk if necessary.
 	if !done {
-		newChunk, err := newOpenChunk(entry, a.maxChunkEntries, a.maxChunkSpreadMs, a.maxChunkOpenTimeMs, a.closedChunksChan)
+		newChunk, err := newOpenChunk(entry, a.maxChunkEntries, a.maxChunkSpread, a.maxChunkOpenTimeMs, a.closedChunksChan)
 		if err != nil {
 			err := grpc.Errorf(codes.Internal, "error while creating new chunk: %v", err)
 			logger.WithError(err).Warnf("Failed")

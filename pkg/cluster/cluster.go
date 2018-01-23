@@ -26,7 +26,7 @@ const (
 // Config holds a few configurable values defining the behavior of the system.
 type Config struct {
 	SmallChunkMaxEntries int
-	SmallChunkSpreadMs   int64
+	SmallChunkSpread     time.Duration
 	SmallChunkMaxAgeMs   int64
 
 	JanitorCompactionInterval time.Duration
@@ -49,7 +49,7 @@ type LocalCluster struct {
 }
 
 // CreateCluster sets up a test cluster, including all services required to run the system.
-func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, appenderPorts []int, appenderFanout int) (*LocalCluster, error) {
+func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, appenderPorts []int, ingestFanout int) (*LocalCluster, error) {
 	var err error
 	var storage *st.Storage
 	if config.StorageType == storageTypeMemory {
@@ -67,7 +67,7 @@ func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, a
 	servers := []*grpc.Server{}
 	appenderAddresses := []string{}
 	for _, port := range appenderPorts {
-		appender, err := appender.New(logger, storage, config.SmallChunkMaxEntries, config.SmallChunkSpreadMs, config.SmallChunkMaxAgeMs)
+		appender, err := appender.New(logger, storage, config.SmallChunkMaxEntries, config.SmallChunkSpread, config.SmallChunkMaxAgeMs)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create appender %d: %v", port, err)
 		}
@@ -88,7 +88,7 @@ func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, a
 		return nil, fmt.Errorf("unable to create discovery: %v", err)
 	}
 
-	ingester, err := in.New(logger, discovery, appenderFanout)
+	ingester, err := in.New(logger, discovery, ingestFanout)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create ingester: %v", err)
 	}
