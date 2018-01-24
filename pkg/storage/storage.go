@@ -9,6 +9,7 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 )
 
@@ -17,18 +18,62 @@ const (
 	chunkPrefix   = "/chunk/"
 )
 
+type storageMetrics struct {
+	numLists  prometheus.Counter
+	numReads  prometheus.Counter
+	numWrites prometheus.Counter
+}
+
+// newStorageMetrics returns a struct with metrics registered in the default registry.
+func newStorageMetrics() (*storageMetrics, error) {
+	result := &storageMetrics{}
+
+	result.numLists = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "almanac_storage_lists",
+		Help: "The number of list requests sent to the storage backend",
+	})
+	if err := prometheus.Register(result.numLists); err != nil {
+		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+			return nil, err
+		}
+	}
+
+	result.numReads = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "almanac_storage_reads",
+		Help: "The number of read requests sent to the storage backend",
+	})
+	if err := prometheus.Register(result.numReads); err != nil {
+		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+			return nil, err
+		}
+	}
+
+	result.numWrites = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "almanac_storage_writes",
+		Help: "The number of write requests sent to the storage backend",
+	})
+	if err := prometheus.Register(result.numWrites); err != nil {
+		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+			return nil, err
+		}
+	}
+
+	return result, nil
+}
+
 // Storage stores chunks of log entries in persistent storage and supports
 // various ways of loading and storing chunks.
 type Storage struct {
 	backend backend
+	metrics *storageMetrics
 }
 
 // ListChunks returns the ids of all stored chunks which overlap with the
 // supplied time range (inclusive on both ends).
 func (s *Storage) ListChunks(ctx context.Context, startMs int64, endMs int64) ([]string, error) {
 	// TODO(dino): Actually respect the start and end times. For now, return all chunks.
-
 	chunkPaths, err := s.backend.list(ctx, chunkPrefix)
+	s.metrics.numLists.Inc()
 	if err != nil {
 		return nil, fmt.Errorf("unable to list chunks: %v", err)
 	}
@@ -43,6 +88,7 @@ func (s *Storage) ListChunks(ctx context.Context, startMs int64, endMs int64) ([
 // resources which must be freed once it is no longer in use.
 func (s *Storage) LoadChunk(ctx context.Context, chunkId string) (*Chunk, error) {
 	bytes, err := s.backend.read(ctx, chunkKey(chunkId))
+	s.metrics.numReads.Inc()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read chunk %s: %v", chunkId, err)
 	}
@@ -69,6 +115,7 @@ func (s *Storage) StoreChunk(ctx context.Context, chunkProto *pb_almanac.Chunk) 
 	}
 
 	err = s.backend.write(ctx, chunkKey(chunkId), bytes)
+	s.metrics.numWrites.Inc()
 	if err != nil {
 		return "", fmt.Errorf("unable to write chunk bytes to backend: %v", err)
 	}
@@ -82,18 +129,18 @@ func NewTempDiskStorage() (*Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create temp dir: %v", err)
 	}
-	return NewDiskStorage(path), nil
+	return NewDiskStorage(path)
 }
 
 // NewDiskStorage creates a backend backed by a root directory on disk.
-func NewDiskStorage(path string) *Storage {
+func NewDiskStorage(path string) (*Storage, error) {
 	log.Printf("created storage at path: %s\n", path)
-	return &Storage{&diskBackend{path: path}}
+	return newStorage(&diskBackend{path: path})
 }
 
 // NewInMemoryStorage returns a storage backed by an in-memory map.
-func NewMemoryStorage() *Storage {
-	return &Storage{&memoryBackend{data: map[string][]byte{}}}
+func NewMemoryStorage() (*Storage, error) {
+	return newStorage(&memoryBackend{data: map[string][]byte{}})
 }
 
 // NewGcsStorage returns a storage backed by the supplied gcs bucket.
@@ -102,7 +149,15 @@ func NewGcsStorage(bucketName string) (*Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create gcs backend: %v", err)
 	}
-	return &Storage{backend}, nil
+	return newStorage(backend)
+}
+
+func newStorage(b backend) (*Storage, error) {
+	m, err := newStorageMetrics()
+	if err != nil {
+		return nil, fmt.Errorf("unable to create storage metrics: %v", err)
+	}
+	return &Storage{metrics: m, backend: b}, nil
 }
 
 func chunkKey(chunkId string) string {

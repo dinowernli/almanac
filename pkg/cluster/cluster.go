@@ -55,7 +55,10 @@ func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, a
 	var err error
 	var storage *st.Storage
 	if config.StorageType == storageTypeMemory {
-		storage = st.NewMemoryStorage()
+		storage, err = st.NewMemoryStorage()
+		if err != nil {
+			return nil, fmt.Errorf("unable to create memory storage: %v", err)
+		}
 	} else if config.StorageType == storageTypeGcs {
 		storage, err = st.NewGcsStorage(config.GcsBucket)
 		if err != nil {

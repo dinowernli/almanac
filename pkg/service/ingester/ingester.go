@@ -11,6 +11,7 @@ import (
 	"dinowernli.me/almanac/pkg/util"
 	pb_almanac "dinowernli.me/almanac/proto"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -63,7 +64,7 @@ func New(logger *logrus.Logger, discovery *dc.Discovery, ingestFanout int) (*Ing
 
 // RegisterHttp registers a page on the supplied server, used for ingesting entries.
 func (i *Ingester) RegisterHttp(server *http.ServeMux) {
-	server.HandleFunc(httpUrl, i.handleHttp)
+	server.HandleFunc(httpUrl, prometheus.InstrumentHandlerFunc(httpUrl, i.handleHttp))
 }
 
 func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest) (*pb_almanac.IngestResponse, error) {
