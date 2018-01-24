@@ -31,6 +31,20 @@ message ChunkId {
   // A unique id used to avoid chunk id collisions for chunks produced on
   // different machines.
   string uid = 3;
+
+  enum Type {
+    // Enum sentinel to make sure that the value is always set explicitly.
+    UNKNOWN_TYPE = 0;
+
+    // Small chunks hold few entries and have a small spread.
+    SMALL = 1;
+
+    // Big chunks hold many entries and have a large spread.
+    BIG = 2;
+  }
+
+  // Must be set to something other than "UNKNOWN_TYPE".
+  Type type = 4;
 }
 
 // Represents a chunk of log entries and some additional information about the

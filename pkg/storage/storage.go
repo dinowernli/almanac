@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"dinowernli.me/almanac/pkg/util"
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/golang/protobuf/proto"
@@ -32,30 +33,24 @@ func newStorageMetrics() (*storageMetrics, error) {
 		Name: "almanac_storage_lists",
 		Help: "The number of list requests sent to the storage backend",
 	})
-	if err := prometheus.Register(result.numLists); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
-		}
+	if err := util.RegisterLenient(result.numLists); err != nil {
+		return nil, err
 	}
 
 	result.numReads = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "almanac_storage_reads",
 		Help: "The number of read requests sent to the storage backend",
 	})
-	if err := prometheus.Register(result.numReads); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
-		}
+	if err := util.RegisterLenient(result.numReads); err != nil {
+		return nil, err
 	}
 
 	result.numWrites = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "almanac_storage_writes",
 		Help: "The number of write requests sent to the storage backend",
 	})
-	if err := prometheus.Register(result.numWrites); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
-		}
+	if err := util.RegisterLenient(result.numWrites); err != nil {
+		return nil, err
 	}
 
 	return result, nil

@@ -58,7 +58,7 @@ func TestHttp(t *testing.T) {
 }
 
 func TestSearchNoResults(t *testing.T) {
-	chunk, err := st.ChunkProto([]*pb_almanac.LogEntry{entry1})
+	chunk, err := st.ChunkProto([]*pb_almanac.LogEntry{entry1}, pb_almanac.ChunkId_SMALL)
 	assert.NoError(t, err)
 
 	storage, err := st.NewMemoryStorage()

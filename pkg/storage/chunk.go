@@ -14,9 +14,14 @@ import (
 )
 
 const (
-	chunkIdFormat    = "%d-%d-%s"
+	chunkIdFormat    = "%3s-%d-%d-%s"
 	chunkIdSeparator = "-"
 	chunkUidLength   = 5
+)
+
+var (
+	chunkTypeString = map[pb_almanac.ChunkId_Type]string{pb_almanac.ChunkId_SMALL: "sml", pb_almanac.ChunkId_BIG: "big"}
+	chunkTypeValue  = map[string]pb_almanac.ChunkId_Type{"sml": pb_almanac.ChunkId_SMALL, "big": pb_almanac.ChunkId_BIG}
 )
 
 // ChunkId returns the string representation of the supplied chunk id proto.
@@ -33,7 +38,12 @@ func ChunkId(idProto *pb_almanac.ChunkId) (string, error) {
 		return "", fmt.Errorf("invalid start and end times: start=%d, end=%d", idProto.StartMs, idProto.EndMs)
 	}
 
-	return fmt.Sprintf(chunkIdFormat, idProto.StartMs, idProto.EndMs, idProto.Uid), nil
+	typeString, ok := chunkTypeString[idProto.Type]
+	if !ok {
+		return "", fmt.Errorf("unknown chunk type: %v", idProto.Type)
+	}
+
+	return fmt.Sprintf(chunkIdFormat, typeString, idProto.StartMs, idProto.EndMs, idProto.Uid), nil
 }
 
 // ChunkIdProto returns the structured representation of the supplied chunk id.
@@ -41,16 +51,27 @@ func ChunkIdProto(chunkId string) (*pb_almanac.ChunkId, error) {
 	var uid string
 	var startMs int64
 	var endMs int64
-	_, err := fmt.Sscanf(chunkId, chunkIdFormat, &startMs, &endMs, &uid)
+	var chunkType string
+	_, err := fmt.Sscanf(chunkId, chunkIdFormat, &chunkType, &startMs, &endMs, &uid)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse id %s: %v", chunkId, err)
+		return nil, fmt.Errorf("unable to parse id [%s] with format [%s]: %v", chunkId, chunkIdFormat, err)
 	}
 
-	return &pb_almanac.ChunkId{StartMs: startMs, EndMs: endMs, Uid: uid}, nil
+	typeEnum, ok := chunkTypeValue[chunkType]
+	if !ok {
+		return nil, fmt.Errorf("unknown chunk type string: %s", chunkType)
+	}
+
+	return &pb_almanac.ChunkId{
+		StartMs: startMs,
+		EndMs:   endMs,
+		Uid:     uid,
+		Type:    typeEnum,
+	}, nil
 }
 
 // ChunkProto is a one-stop-shop for creating a chunk proto from a set of entries.
-func ChunkProto(entries []*pb_almanac.LogEntry) (*pb_almanac.Chunk, error) {
+func ChunkProto(entries []*pb_almanac.LogEntry, chunkType pb_almanac.ChunkId_Type) (*pb_almanac.Chunk, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("cannot create chunk proto for zero entries")
 	}
@@ -80,6 +101,7 @@ func ChunkProto(entries []*pb_almanac.LogEntry) (*pb_almanac.Chunk, error) {
 		StartMs: minMs,
 		EndMs:   maxMs,
 		Uid:     NewChunkUid(),
+		Type:    chunkType,
 	}
 
 	idxProto, err := index.Serialize(idx)

@@ -19,7 +19,7 @@ var (
 )
 
 func TestStorageRoundTrip(t *testing.T) {
-	chunkProto, err := ChunkProto([]*pb_almanac.LogEntry{entry})
+	chunkProto, err := ChunkProto([]*pb_almanac.LogEntry{entry}, pb_almanac.ChunkId_SMALL)
 	assert.NoError(t, err)
 
 	chunk, err := openChunk(chunkProto)
