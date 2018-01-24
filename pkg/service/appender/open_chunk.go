@@ -192,5 +192,6 @@ func newChunkId() *pb_almanac.ChunkId {
 		Uid:     storage.NewChunkUid(),
 		StartMs: math.MaxInt64,
 		EndMs:   math.MinInt64,
+		Type:    pb_almanac.ChunkId_SMALL,
 	}
 }

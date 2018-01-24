@@ -19,7 +19,7 @@ var (
 )
 
 func TestStorageRoundTrip(t *testing.T) {
-	chunkProto, err := ChunkProto([]*pb_almanac.LogEntry{entry})
+	chunkProto, err := ChunkProto([]*pb_almanac.LogEntry{entry}, pb_almanac.ChunkId_SMALL)
 	assert.NoError(t, err)
 
 	chunk, err := openChunk(chunkProto)
@@ -29,10 +29,10 @@ func TestStorageRoundTrip(t *testing.T) {
 	storage, err := NewMemoryStorage()
 	assert.NoError(t, err)
 
-	id, err := storage.StoreChunk(context.Background(), chunkProto)
+	_, err = storage.StoreChunk(context.Background(), chunkProto)
 	assert.NoError(t, err)
 
-	loadedChunk, err := storage.LoadChunk(context.Background(), id)
+	loadedChunk, err := storage.LoadChunk(context.Background(), chunkProto.Id)
 	assert.NoError(t, err)
 	defer loadedChunk.Close()
 

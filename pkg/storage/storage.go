@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"dinowernli.me/almanac/pkg/util"
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/golang/protobuf/proto"
@@ -32,30 +33,24 @@ func newStorageMetrics() (*storageMetrics, error) {
 		Name: "almanac_storage_lists",
 		Help: "The number of list requests sent to the storage backend",
 	})
-	if err := prometheus.Register(result.numLists); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
-		}
+	if err := util.RegisterLenient(result.numLists); err != nil {
+		return nil, err
 	}
 
 	result.numReads = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "almanac_storage_reads",
 		Help: "The number of read requests sent to the storage backend",
 	})
-	if err := prometheus.Register(result.numReads); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
-		}
+	if err := util.RegisterLenient(result.numReads); err != nil {
+		return nil, err
 	}
 
 	result.numWrites = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "almanac_storage_writes",
 		Help: "The number of write requests sent to the storage backend",
 	})
-	if err := prometheus.Register(result.numWrites); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
-		}
+	if err := util.RegisterLenient(result.numWrites); err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -86,7 +81,12 @@ func (s *Storage) ListChunks(ctx context.Context, startMs int64, endMs int64) ([
 
 // LoadChunk loads the chunk with the supplied id. The returned chunk uses
 // resources which must be freed once it is no longer in use.
-func (s *Storage) LoadChunk(ctx context.Context, chunkId string) (*Chunk, error) {
+func (s *Storage) LoadChunk(ctx context.Context, chunkIdProto *pb_almanac.ChunkId) (*Chunk, error) {
+	chunkId, err := ChunkId(chunkIdProto)
+	if err != nil {
+		return nil, fmt.Errorf("unable to compute chunk id from proto: %v", err)
+	}
+
 	bytes, err := s.backend.read(ctx, chunkKey(chunkId))
 	s.metrics.numReads.Inc()
 	if err != nil {
