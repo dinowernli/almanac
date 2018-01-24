@@ -11,6 +11,7 @@ import (
 	"dinowernli.me/almanac/pkg/storage"
 	pb_almanac "dinowernli.me/almanac/proto"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
@@ -45,7 +46,7 @@ func New(logger *logrus.Logger, storage *storage.Storage, discovery *discovery.D
 
 // RegisterHttp registers a page on the supplied server, used for executing searches.
 func (m *Mixer) RegisterHttp(server *http.ServeMux) {
-	server.HandleFunc(httpUrl, m.handleHttp)
+	server.HandleFunc(httpUrl, prometheus.InstrumentHandlerFunc(httpUrl, m.handleHttp))
 }
 
 func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (*pb_almanac.SearchResponse, error) {

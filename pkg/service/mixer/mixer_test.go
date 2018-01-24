@@ -25,10 +25,13 @@ var (
 )
 
 func TestMixerCallsAppenders(t *testing.T) {
-	appenders := []pb_almanac.AppenderClient{&fakeAppender{}, &fakeAppender{}, &fakeAppender{}, &fakeAppender{}}
-	mixer := New(logrus.New(), st.NewMemoryStorage(), discovery.NewForTesting(appenders))
+	storage, err := st.NewMemoryStorage()
+	assert.NoError(t, err)
 
-	_, err := mixer.Search(context.Background(), &pb_almanac.SearchRequest{})
+	appenders := []pb_almanac.AppenderClient{&fakeAppender{}, &fakeAppender{}, &fakeAppender{}, &fakeAppender{}}
+	mixer := New(logrus.New(), storage, discovery.NewForTesting(appenders))
+
+	_, err = mixer.Search(context.Background(), &pb_almanac.SearchRequest{})
 	assert.NoError(t, err)
 
 	for _, appender := range appenders {
@@ -37,8 +40,11 @@ func TestMixerCallsAppenders(t *testing.T) {
 }
 
 func TestHttp(t *testing.T) {
+	storage, err := st.NewMemoryStorage()
+	assert.NoError(t, err)
+
 	appenders := []pb_almanac.AppenderClient{&fakeAppender{}}
-	mixer := New(logrus.New(), st.NewMemoryStorage(), discovery.NewForTesting(appenders))
+	mixer := New(logrus.New(), storage, discovery.NewForTesting(appenders))
 
 	request, err := http.NewRequest("GET", "/mixer", nil)
 	assert.NoError(t, err)
@@ -55,7 +61,9 @@ func TestSearchNoResults(t *testing.T) {
 	chunk, err := st.ChunkProto([]*pb_almanac.LogEntry{entry1})
 	assert.NoError(t, err)
 
-	storage := st.NewMemoryStorage()
+	storage, err := st.NewMemoryStorage()
+	assert.NoError(t, err)
+
 	_, err = storage.StoreChunk(context.Background(), chunk)
 	assert.NoError(t, err)
 

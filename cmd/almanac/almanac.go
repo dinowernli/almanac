@@ -9,8 +9,14 @@ import (
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+)
+
+const (
+	metricsHttpPath = "/metrics"
 )
 
 var (
@@ -67,12 +73,18 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+	mux.Handle(metricsHttpPath, prometheus.InstrumentHandler(metricsHttpPath, promhttp.Handler()))
+	logger.Infof("Metrics at %s", formatLink(metricsHttpPath))
 
 	cluster.Mixer.RegisterHttp(mux)
-	logger.Infof("Started mixer at http://localhost:%d/mixer", *flagHttpPort)
+	logger.Infof("Mixer at %s", formatLink("/mixer"))
 
 	cluster.Ingester.RegisterHttp(mux)
-	logger.Infof("Started ingester at http://localhost:%d/ingester", *flagHttpPort)
+	logger.Infof("Ingester at %s", formatLink("/ingester"))
 
 	http.ListenAndServe(fmt.Sprintf(":%d", *flagHttpPort), mux)
+}
+
+func formatLink(path string) string {
+	return fmt.Sprintf("http://localhost:%d%s", *flagHttpPort, path)
 }

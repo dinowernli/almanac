@@ -26,7 +26,9 @@ func TestStorageRoundTrip(t *testing.T) {
 	assert.NoError(t, err)
 	defer chunk.Close()
 
-	storage := NewMemoryStorage()
+	storage, err := NewMemoryStorage()
+	assert.NoError(t, err)
+
 	id, err := storage.StoreChunk(context.Background(), chunkProto)
 	assert.NoError(t, err)
 
