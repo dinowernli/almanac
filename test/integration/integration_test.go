@@ -93,7 +93,7 @@ func TestRoundTripThroughStorage(t *testing.T) {
 	// Depending on how the ingesters select appenders, the exact number of stored chunks
 	// could vary. But we definitely should have at least one. If this fails, writing chunks
 	// to storage is probably broken.
-	chunks, err := c.Storage.ListChunks(context.Background(), 0, 0)
+	chunks, err := c.Storage.ListChunks(context.Background(), 0, 0, pb_almanac.ChunkId_SMALL)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, chunks)
 

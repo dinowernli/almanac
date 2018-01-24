@@ -5,6 +5,7 @@ import (
 	"time"
 
 	st "dinowernli.me/almanac/pkg/storage"
+	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -59,5 +60,14 @@ func (j *Janitor) start() {
 }
 
 func (j *Janitor) executeCompaction() error {
+	ctx, cancel := context.WithCancel(j.ctx)
+	defer cancel()
+
+	chunks, err := j.storage.ListChunks(ctx, 0, 0, pb_almanac.ChunkId_SMALL)
+	if err != nil {
+		return fmt.Errorf("unable to list chunks: %v", err)
+	}
+	j.logger.Infof("Found %d small chunk(s) to compact...", len(chunks))
+
 	return fmt.Errorf("compaction not implemented, max spread: %v", j.bigChunkMaxSpread)
 }

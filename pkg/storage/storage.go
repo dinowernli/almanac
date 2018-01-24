@@ -17,10 +17,12 @@ import (
 const (
 	tempDirPrefix = "almanac"
 	chunkPrefix   = "/chunk/"
+
+	chunkTypeLabel = "chunk_type"
 )
 
 type storageMetrics struct {
-	numLists  prometheus.Counter
+	numLists  *prometheus.CounterVec
 	numReads  prometheus.Counter
 	numWrites prometheus.Counter
 }
@@ -29,10 +31,10 @@ type storageMetrics struct {
 func newStorageMetrics() (*storageMetrics, error) {
 	result := &storageMetrics{}
 
-	result.numLists = prometheus.NewCounter(prometheus.CounterOpts{
+	result.numLists = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "almanac_storage_lists",
 		Help: "The number of list requests sent to the storage backend",
-	})
+	}, []string{chunkTypeLabel})
 	if err := util.RegisterLenient(result.numLists); err != nil {
 		return nil, err
 	}
@@ -65,10 +67,15 @@ type Storage struct {
 
 // ListChunks returns the ids of all stored chunks which overlap with the
 // supplied time range (inclusive on both ends).
-func (s *Storage) ListChunks(ctx context.Context, startMs int64, endMs int64) ([]string, error) {
+func (s *Storage) ListChunks(ctx context.Context, startMs int64, endMs int64, chunkType pb_almanac.ChunkId_Type) ([]string, error) {
+	chunkTypeString, ok := chunkTypeString[chunkType]
+	if !ok {
+		return nil, fmt.Errorf("unknown chunk type: %v", chunkType)
+	}
+
 	// TODO(dino): Actually respect the start and end times. For now, return all chunks.
-	chunkPaths, err := s.backend.list(ctx, chunkPrefix)
-	s.metrics.numLists.Inc()
+	chunkPaths, err := s.backend.list(ctx, chunkPrefix+chunkTypeString)
+	s.metrics.numLists.With(prometheus.Labels{chunkTypeLabel: chunkTypeString})
 	if err != nil {
 		return nil, fmt.Errorf("unable to list chunks: %v", err)
 	}
