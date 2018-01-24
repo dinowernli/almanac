@@ -94,14 +94,9 @@ func (i *chunkHeapItem) ensureChunkLoaded() error {
 		return nil
 	}
 
-	chunkId, err := st.ChunkId(i.chunkIdProto)
+	chunk, err := i.storage.LoadChunk(i.ctx, i.chunkIdProto)
 	if err != nil {
-		return fmt.Errorf("unable to compute chunk id from proto: %v", err)
-	}
-
-	chunk, err := i.storage.LoadChunk(i.ctx, chunkId)
-	if err != nil {
-		return fmt.Errorf("unable to load chunk %s from storage: %v", chunkId, err)
+		return fmt.Errorf("unable to load chunk from storage: %v", err)
 	}
 
 	entries, err := chunk.Search(i.ctx, i.searchRequest.Query, i.searchRequest.Num, i.searchRequest.StartMs, i.searchRequest.EndMs)
@@ -109,8 +104,7 @@ func (i *chunkHeapItem) ensureChunkLoaded() error {
 		return fmt.Errorf("unable to search chunk: %v", err)
 	}
 
-	// TODO(dino): Correctness relies on the entries being sorted. Make sure that's the case.
-
+	// Note that correctness relies on the search results being sorted.
 	i.entries = entries
 	i.loaded = true
 	return nil

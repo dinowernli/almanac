@@ -124,7 +124,7 @@ func openChunk(chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 	return &Chunk{id: chunkId, index: idx, entries: entryMap}, nil
 }
 
-// Search returns all log entries in the chunk matching the supplied query.
+// Search returns all log entries in the chunk matching the supplied query, in ascending order by timestamp.
 func (c *Chunk) Search(ctx context.Context, query string, num int32, startMs int64, endMs int64) ([]*pb_almanac.LogEntry, error) {
 	if c.closed {
 		return nil, fmt.Errorf("cannot execute search on closed chunk")

@@ -86,7 +86,12 @@ func (s *Storage) ListChunks(ctx context.Context, startMs int64, endMs int64) ([
 
 // LoadChunk loads the chunk with the supplied id. The returned chunk uses
 // resources which must be freed once it is no longer in use.
-func (s *Storage) LoadChunk(ctx context.Context, chunkId string) (*Chunk, error) {
+func (s *Storage) LoadChunk(ctx context.Context, chunkIdProto *pb_almanac.ChunkId) (*Chunk, error) {
+	chunkId, err := ChunkId(chunkIdProto)
+	if err != nil {
+		return nil, fmt.Errorf("unable to compute chunk id from proto: %v", err)
+	}
+
 	bytes, err := s.backend.read(ctx, chunkKey(chunkId))
 	s.metrics.numReads.Inc()
 	if err != nil {
