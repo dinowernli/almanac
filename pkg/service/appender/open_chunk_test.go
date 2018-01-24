@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"dinowernli.me/almanac/pkg/storage"
 	pb_almanac "dinowernli.me/almanac/proto"
 
 	"github.com/stretchr/testify/assert"
@@ -70,6 +71,10 @@ func TestToProto(t *testing.T) {
 	assert.Equal(t, 2, len(chunkProto.Entries))
 	assert.Equal(t, int64(200), chunkProto.Id.StartMs)
 	assert.Equal(t, int64(400), chunkProto.Id.EndMs)
+
+	// Check that the id is valid.
+	_, err = storage.ChunkId(chunkProto.Id)
+	assert.NoError(t, err)
 }
 
 func TestSearch(t *testing.T) {
