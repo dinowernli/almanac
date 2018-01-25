@@ -36,7 +36,7 @@ func TestStorageRoundTrip(t *testing.T) {
 	assert.NoError(t, err)
 	defer loadedChunk.Close()
 
-	assert.True(t, reflect.DeepEqual(chunk.entries, loadedChunk.entries))
+	assert.True(t, reflect.DeepEqual(chunk.entryMap, loadedChunk.entryMap))
 }
 
 func TestList(t *testing.T) {
