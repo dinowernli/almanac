@@ -80,12 +80,17 @@ func (m *Mixer) Search(ctx context.Context, request *pb_almanac.SearchRequest) (
 
 	// Compute a heap item for every chunk whose time span overlaps with our query.
 	g.Go(func() error {
-		// TODO(dino): Also load the big chunks.
-		chunkIds, err := m.storage.ListChunks(ctx, request.StartMs, request.EndMs, pb_almanac.ChunkId_SMALL)
+		smallChunkIds, err := m.storage.ListChunks(ctx, request.StartMs, request.EndMs, pb_almanac.ChunkId_SMALL)
 		if err != nil {
-			return fmt.Errorf("unable to list chunks: %v", err)
+			return fmt.Errorf("unable to list small chunks: %v", err)
 		}
-		for _, id := range chunkIds {
+		bigChunkIds, err := m.storage.ListChunks(ctx, request.StartMs, request.EndMs, pb_almanac.ChunkId_BIG)
+		if err != nil {
+			return fmt.Errorf("unable to list big chunks: %v", err)
+		}
+		allChunkIds := append(smallChunkIds, bigChunkIds...)
+
+		for _, id := range allChunkIds {
 			idProto, err := storage.ChunkIdProto(id)
 			if err != nil {
 				return fmt.Errorf("unable to compute chunk id proto: %v", err)

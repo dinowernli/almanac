@@ -22,9 +22,10 @@ const (
 )
 
 type storageMetrics struct {
-	numLists  *prometheus.CounterVec
-	numReads  prometheus.Counter
-	numWrites prometheus.Counter
+	numLists   *prometheus.CounterVec
+	numReads   prometheus.Counter
+	numWrites  prometheus.Counter
+	numDeletes prometheus.Counter
 }
 
 // newStorageMetrics returns a struct with metrics registered in the default registry.
@@ -52,6 +53,14 @@ func newStorageMetrics() (*storageMetrics, error) {
 		Help: "The number of write requests sent to the storage backend",
 	})
 	if err := util.RegisterLenient(result.numWrites); err != nil {
+		return nil, err
+	}
+
+	result.numDeletes = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "almanac_storage_deletes",
+		Help: "The number of delete requests sent to the storage backend",
+	})
+	if err := util.RegisterLenient(result.numDeletes); err != nil {
 		return nil, err
 	}
 
@@ -136,6 +145,7 @@ func (s *Storage) DeleteChunk(ctx context.Context, chunkIdProto *pb_almanac.Chun
 		return fmt.Errorf("unable to extract chunk id: %v", err)
 	}
 	err = s.backend.delete(ctx, chunkKey(chunkId))
+	s.metrics.numDeletes.Inc()
 	if err != nil {
 		return fmt.Errorf("unable to delete chunk: %v", err)
 	}
