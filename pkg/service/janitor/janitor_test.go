@@ -38,7 +38,7 @@ func TestCompaction(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Give the janitor enough time to compact.
-	time.Sleep(2 * compactionInterval)
+	time.Sleep(4 * compactionInterval)
 
 	// Check that we have big chunks now.
 	bigChunks, err = storage.ListChunks(context.Background(), 0, 0, pb_almanac.ChunkId_BIG)
