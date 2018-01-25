@@ -69,11 +69,15 @@ func (j *Janitor) executeCompaction() error {
 	if err != nil {
 		return fmt.Errorf("unable to list chunks during compaction: %v", err)
 	}
-	j.logger.Infof("Found %d small chunks in storage", len(chunks))
+	j.logger.Infof("Found %d small chunk(s) in storage", len(chunks))
 
 	selectedChunkIds, err := j.selectSmallChunks(chunks)
 	if err != nil {
 		return fmt.Errorf("unable to select small chunks during compaction: %v", err)
+	}
+	if len(selectedChunkIds) == 0 {
+		// Nothing to compact.
+		return nil
 	}
 	j.logger.Infof("Selected %d small chunk(s) to compact", len(selectedChunkIds))
 
@@ -93,7 +97,7 @@ func (j *Janitor) executeCompaction() error {
 	if err != nil {
 		return fmt.Errorf("unable to delete small chunks during compaction: %v", err)
 	}
-	j.logger.Infof("Deleted %d small chunks which have become redundant", len(selectedChunkIds))
+	j.logger.Infof("Deleted %d small chunk(s) which have become redundant", len(selectedChunkIds))
 
 	j.logger.Infof("Compaction successful, took %v", time.Since(start))
 	return nil
@@ -179,6 +183,12 @@ func (j *Janitor) constructBigChunk(ctx context.Context, smallChunkIds []*pb_alm
 }
 
 func (j *Janitor) deleteSmallChunks(ctx context.Context, smallChunkIds []*pb_almanac.ChunkId) error {
-	// TODO(dino): Actually implement this once the mixer reads big chunks as well.
-	return fmt.Errorf("deleting chunks not implemented")
+	// TODO(dino): Parallelize this in a controlled way.
+	for _, c := range smallChunkIds {
+		err := j.storage.DeleteChunk(ctx, c)
+		if err != nil {
+			return fmt.Errorf("failed to delete chunk: %v", err)
+		}
+	}
+	return nil
 }

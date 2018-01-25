@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	compactionInterval = 500 * time.Millisecond
+	compactionInterval = 1 * time.Second
 	bigChunkMaxSpread  = 10 * time.Millisecond
 )
 
@@ -22,8 +22,8 @@ var (
 	entry2 = &pb_almanac.LogEntry{Id: "id2", TimestampMs: 2, EntryJson: `{}`}
 	entry3 = &pb_almanac.LogEntry{Id: "id3", TimestampMs: 3, EntryJson: `{}`}
 	entry4 = &pb_almanac.LogEntry{Id: "id4", TimestampMs: 4, EntryJson: `{}`}
-	entry5 = &pb_almanac.LogEntry{Id: "id4", TimestampMs: 40, EntryJson: `{}`}
-	entry6 = &pb_almanac.LogEntry{Id: "id4", TimestampMs: 50, EntryJson: `{}`}
+	entry5 = &pb_almanac.LogEntry{Id: "id4", TimestampMs: 40000, EntryJson: `{}`}
+	entry6 = &pb_almanac.LogEntry{Id: "id4", TimestampMs: 50000, EntryJson: `{}`}
 )
 
 func TestCompaction(t *testing.T) {
@@ -38,7 +38,7 @@ func TestCompaction(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Give the janitor enough time to compact.
-	time.Sleep(2 * compactionInterval)
+	time.Sleep(4 * compactionInterval)
 
 	// Check that we have big chunks now.
 	bigChunks, err = storage.ListChunks(context.Background(), 0, 0, pb_almanac.ChunkId_BIG)

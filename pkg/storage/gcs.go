@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	gcsReadTimeout  = 1 * time.Second
-	gcsWriteTimeout = 1 * time.Second
-	gcsListTimeout  = 1 * time.Second
+	gcsReadTimeout   = 1 * time.Second
+	gcsWriteTimeout  = 1 * time.Second
+	gcsListTimeout   = 1 * time.Second
+	gcsDeleteTimeout = 1 * time.Second
 )
 
 // newGcsBackend returns a new backend implementation backed by the supplied
@@ -73,4 +74,15 @@ func (b *gcsBackend) list(ctx context.Context, prefix string) ([]string, error) 
 		result = append(result, attributes.Name)
 	}
 	return result, nil
+}
+
+func (b *gcsBackend) delete(ctx context.Context, id string) error {
+	c, f := context.WithTimeout(ctx, gcsDeleteTimeout)
+	defer f()
+
+	err := b.bucket.Object(id).Delete(c)
+	if err != nil {
+		return fmt.Errorf("gcs request to delete %s failed: %v", id, err)
+	}
+	return nil
 }
