@@ -69,7 +69,7 @@ func (j *Janitor) executeCompaction() error {
 	if err != nil {
 		return fmt.Errorf("unable to list chunks during compaction: %v", err)
 	}
-	j.logger.Info("Found %d small chunks in storage", len(chunks))
+	j.logger.Infof("Found %d small chunks in storage", len(chunks))
 
 	selectedChunkIds, err := j.selectSmallChunks(chunks)
 	if err != nil {
@@ -179,5 +179,6 @@ func (j *Janitor) constructBigChunk(ctx context.Context, smallChunkIds []*pb_alm
 }
 
 func (j *Janitor) deleteSmallChunks(ctx context.Context, smallChunkIds []*pb_almanac.ChunkId) error {
+	// TODO(dino): Actually implement this once the mixer reads big chunks as well.
 	return fmt.Errorf("deleting chunks not implemented")
 }
