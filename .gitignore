@@ -4,4 +4,4 @@ bazel-*
 vendor/
 .idea/
 
-/almanac
+/almanac*
