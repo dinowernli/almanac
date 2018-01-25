@@ -130,6 +130,18 @@ func (s *Storage) StoreChunk(ctx context.Context, chunkProto *pb_almanac.Chunk) 
 	return chunkId, nil
 }
 
+func (s *Storage) DeleteChunk(ctx context.Context, chunkIdProto *pb_almanac.ChunkId) error {
+	chunkId, err := ChunkId(chunkIdProto)
+	if err != nil {
+		return fmt.Errorf("unable to extract chunk id: %v", err)
+	}
+	err = s.backend.delete(ctx, chunkKey(chunkId))
+	if err != nil {
+		return fmt.Errorf("unable to delete chunk: %v", err)
+	}
+	return nil
+}
+
 // NewTempDiskStorage creates a backend backed by a new temporary directory.
 func NewTempDiskStorage() (*Storage, error) {
 	path, err := ioutil.TempDir("", tempDirPrefix)

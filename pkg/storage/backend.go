@@ -20,6 +20,9 @@ type backend interface {
 
 	// list returns all keys which start with the supplied prefix.
 	list(ctx context.Context, prefix string) ([]string, error)
+
+	// delete removes the bytes associated with the given key.
+	delete(ctx context.Context, id string) error
 }
 
 // diskBackend is a storage backend backed by a location on disk.
@@ -36,7 +39,11 @@ func (s *diskBackend) write(ctx context.Context, id string, contents []byte) err
 }
 
 func (s *diskBackend) list(ctx context.Context, prefix string) ([]string, error) {
-	return nil, fmt.Errorf("List is not implemented for disk storage")
+	return nil, fmt.Errorf("list not implemented")
+}
+
+func (s *diskBackend) delete(ctx context.Context, id string) error {
+	return fmt.Errorf("delete not implemented")
 }
 
 func (s *diskBackend) filename(id string) string {
@@ -69,4 +76,13 @@ func (s *memoryBackend) list(ctx context.Context, prefix string) ([]string, erro
 		}
 	}
 	return result, nil
+}
+
+func (s *memoryBackend) delete(ctx context.Context, id string) error {
+	_, ok := s.data[id]
+	if !ok {
+		return fmt.Errorf("key %s not found", id)
+	}
+	delete(s.data, id)
+	return nil
 }

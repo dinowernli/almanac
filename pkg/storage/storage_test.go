@@ -57,3 +57,30 @@ func TestList(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, bigChunks)
 }
+
+func TestDelete(t *testing.T) {
+	storage, err := NewMemoryStorage()
+	assert.NoError(t, err)
+
+	chunkProto, err := ChunkProto([]*pb_almanac.LogEntry{entry}, pb_almanac.ChunkId_SMALL)
+	assert.NoError(t, err)
+
+	// Try deleting before it's present.
+	err = storage.DeleteChunk(context.Background(), chunkProto.Id)
+	assert.Error(t, err)
+
+	_, err = storage.StoreChunk(context.Background(), chunkProto)
+	assert.NoError(t, err)
+
+	smallChunks, err := storage.ListChunks(context.Background(), 0, 0, pb_almanac.ChunkId_SMALL)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(smallChunks))
+
+	// Try deleting again.
+	err = storage.DeleteChunk(context.Background(), chunkProto.Id)
+	assert.NoError(t, err)
+
+	smallChunks, err = storage.ListChunks(context.Background(), 0, 0, pb_almanac.ChunkId_SMALL)
+	assert.NoError(t, err)
+	assert.Empty(t, smallChunks)
+}
