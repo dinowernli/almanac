@@ -120,10 +120,11 @@ func NewChunkUid() string {
 // Chunk is an in-memory, immutable representation of a stored chunk. A chunk
 // must be closed by calling Close() once it is no longer in use.
 type Chunk struct {
-	id      string
-	index   *index.Index
-	entries map[string]*pb_almanac.LogEntry
-	closed  bool
+	id       *pb_almanac.ChunkId
+	index    *index.Index
+	entryMap map[string]*pb_almanac.LogEntry
+	entries  []*pb_almanac.LogEntry
+	closed   bool
 }
 
 // openChunk returns a chunk instance for the supplied proto. The caller is
@@ -143,7 +144,7 @@ func openChunk(chunkProto *pb_almanac.Chunk) (*Chunk, error) {
 	for _, entry := range chunkProto.Entries {
 		entryMap[entry.Id] = entry
 	}
-	return &Chunk{id: chunkId, index: idx, entries: entryMap}, nil
+	return &Chunk{id: chunkProto.Id, index: idx, entryMap: entryMap, entries: chunkProto.Entries}, nil
 }
 
 // Search returns all log entries in the chunk matching the supplied query, in ascending order by timestamp.
@@ -151,7 +152,17 @@ func (c *Chunk) Search(ctx context.Context, query string, num int32, startMs int
 	if c.closed {
 		return nil, fmt.Errorf("cannot execute search on closed chunk")
 	}
-	return Search(ctx, c.index, c.entries, query, num, startMs, endMs)
+	return Search(ctx, c.index, c.entryMap, query, num, startMs, endMs)
+}
+
+// Entries returns all the entries in this chunk. Callers must not modify the return value.
+func (c *Chunk) Entries() []*pb_almanac.LogEntry {
+	return c.entries
+}
+
+// Id returns the id of this chunk. Callers must not modify the return value.
+func (c *Chunk) Id() *pb_almanac.ChunkId {
+	return c.id
 }
 
 // Close releases any resources associated with this chunk.
@@ -199,7 +210,7 @@ func Search(ctx context.Context, idx *index.Index, entries map[string]*pb_almana
 }
 
 func (c *Chunk) fetchEntry(id string) (*pb_almanac.LogEntry, error) {
-	result, ok := c.entries[id]
+	result, ok := c.entryMap[id]
 	if !ok {
 		return nil, fmt.Errorf("entry %s not found", id)
 	}

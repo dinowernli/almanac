@@ -36,5 +36,24 @@ func TestStorageRoundTrip(t *testing.T) {
 	assert.NoError(t, err)
 	defer loadedChunk.Close()
 
-	assert.True(t, reflect.DeepEqual(chunk.entries, loadedChunk.entries))
+	assert.True(t, reflect.DeepEqual(chunk.entryMap, loadedChunk.entryMap))
+}
+
+func TestList(t *testing.T) {
+	storage, err := NewMemoryStorage()
+	assert.NoError(t, err)
+
+	chunkProto, err := ChunkProto([]*pb_almanac.LogEntry{entry}, pb_almanac.ChunkId_SMALL)
+	assert.NoError(t, err)
+
+	_, err = storage.StoreChunk(context.Background(), chunkProto)
+	assert.NoError(t, err)
+
+	smallChunks, err := storage.ListChunks(context.Background(), 0, 0, pb_almanac.ChunkId_SMALL)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(smallChunks))
+
+	bigChunks, err := storage.ListChunks(context.Background(), 0, 0, pb_almanac.ChunkId_BIG)
+	assert.NoError(t, err)
+	assert.Empty(t, bigChunks)
 }
