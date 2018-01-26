@@ -162,7 +162,7 @@ func NewDiskStorage(path string) (*Storage, error) {
 		return nil, fmt.Errorf("unable to determine whether path %s is empty dir: %v", path, err)
 	}
 	if !empty {
-		return nil, fmt.Errorf("expected path %s to be an empty directory, but wasn't")
+		return nil, fmt.Errorf("expected path %s to be an empty directory, but wasn't", path)
 	}
 	return newStorage(&diskBackend{path: path})
 }
