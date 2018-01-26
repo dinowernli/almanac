@@ -3,7 +3,9 @@ package storage
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -30,24 +32,41 @@ type diskBackend struct {
 	path string
 }
 
-func (s *diskBackend) read(ctx context.Context, id string) ([]byte, error) {
-	return ioutil.ReadFile(s.filename(id))
+func (b *diskBackend) read(ctx context.Context, id string) ([]byte, error) {
+	return ioutil.ReadFile(b.filename(id))
 }
 
-func (s *diskBackend) write(ctx context.Context, id string, contents []byte) error {
-	return ioutil.WriteFile(s.filename(id), contents, 0644)
+func (b *diskBackend) write(ctx context.Context, id string, contents []byte) error {
+	return ioutil.WriteFile(b.filename(id), contents, 0644)
 }
 
-func (s *diskBackend) list(ctx context.Context, prefix string) ([]string, error) {
-	return nil, fmt.Errorf("list not implemented")
+func (b *diskBackend) list(ctx context.Context, prefix string) ([]string, error) {
+	matches, err := filepath.Glob(filepath.Join(b.path, prefix+"*"))
+	if err != nil {
+		return nil, fmt.Errorf("unable to glob files: %v", err)
+	}
+
+	results := []string{}
+	for _, m := range matches {
+		results = append(results, filepath.Base(m))
+	}
+	return results, nil
 }
 
-func (s *diskBackend) delete(ctx context.Context, id string) error {
-	return fmt.Errorf("delete not implemented")
+func (b *diskBackend) delete(ctx context.Context, id string) error {
+	filename := filepath.Join(b.path, id)
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return fmt.Errorf("value %s does not exist", id)
+	}
+	err := os.Remove(filename)
+	if err != nil {
+		return fmt.Errorf("unable to remove file %s: %v", filename, err)
+	}
+	return nil
 }
 
-func (s *diskBackend) filename(id string) string {
-	return path.Join(s.path, id)
+func (b *diskBackend) filename(id string) string {
+	return path.Join(b.path, id)
 }
 
 // memoryBackend is a storage backend backed by memory.
@@ -55,22 +74,22 @@ type memoryBackend struct {
 	data map[string][]byte
 }
 
-func (s *memoryBackend) read(ctx context.Context, id string) ([]byte, error) {
-	result := s.data[id]
+func (b *memoryBackend) read(ctx context.Context, id string) ([]byte, error) {
+	result := b.data[id]
 	if result == nil {
 		return nil, fmt.Errorf("value %s does not exist", id)
 	}
 	return result, nil
 }
 
-func (s *memoryBackend) write(ctx context.Context, id string, contents []byte) error {
-	s.data[id] = contents
+func (b *memoryBackend) write(ctx context.Context, id string, contents []byte) error {
+	b.data[id] = contents
 	return nil
 }
 
-func (s *memoryBackend) list(ctx context.Context, prefix string) ([]string, error) {
+func (b *memoryBackend) list(ctx context.Context, prefix string) ([]string, error) {
 	result := []string{}
-	for k := range s.data {
+	for k := range b.data {
 		if strings.HasPrefix(k, prefix) {
 			result = append(result, k)
 		}
@@ -78,11 +97,11 @@ func (s *memoryBackend) list(ctx context.Context, prefix string) ([]string, erro
 	return result, nil
 }
 
-func (s *memoryBackend) delete(ctx context.Context, id string) error {
-	_, ok := s.data[id]
+func (b *memoryBackend) delete(ctx context.Context, id string) error {
+	_, ok := b.data[id]
 	if !ok {
 		return fmt.Errorf("key %s not found", id)
 	}
-	delete(s.data, id)
+	delete(b.data, id)
 	return nil
 }
