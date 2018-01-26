@@ -30,7 +30,7 @@ Run the demo binary by executing:
 
 This will start a single-process cluster and will print the locations of a few relevant web pages which can be used to play around manually. By default, the demo runs against an in-memory storage implementation. In order to use an actual GCS bucket, execute:
 
-`GOOGLE_APPLICATION_CREDENTIALS=<path> go run ./cmd/almanac/almanac.go --storage=gcs --gcs.bucket=<bucket>`
+`GOOGLE_APPLICATION_CREDENTIALS=<path> go run ./cmd/almanac/almanac.go --storage=gcs --storage.gcs.bucket=<bucket>`
 
 ### Running tests
 
