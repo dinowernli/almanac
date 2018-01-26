@@ -1,0 +1,24 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: almanac
+spec:
+  selector:
+    matchLabels:
+      app: almanac
+  template:
+    metadata:
+      labels:
+        app: almanac
+    spec:
+      volumes:
+      - name: volume-tmp
+        emptyDir: {}
+      containers:
+      - name: almanac-all
+        image: almanac:v1
+        volumeMounts:
+        - mountPath: /tmp/
+          name: volume-tmp
+        ports:
+        - containerPort: 12345
