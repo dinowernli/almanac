@@ -1,5 +1,10 @@
 language: go
 
+sudo: required
+
+services:
+  - docker
+
 go_import_path: dinowernli.me/almanac
 
 env:
@@ -25,4 +30,5 @@ script:
   - tools/gendata.sh --check
   - go build ./...
   - go test ./...
+  - docker build .
 
