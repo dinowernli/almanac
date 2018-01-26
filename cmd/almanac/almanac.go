@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"dinowernli.me/almanac/pkg/cluster"
+	"dinowernli.me/almanac/pkg/storage"
 	pb_almanac "dinowernli.me/almanac/proto"
 
-	"dinowernli.me/almanac/pkg/storage"
 	"github.com/alecthomas/kingpin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
