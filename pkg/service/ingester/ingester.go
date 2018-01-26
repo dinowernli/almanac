@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"dinowernli.me/almanac/pkg/service/appender"
 )
 
 const (
@@ -89,7 +90,9 @@ func (i *Ingester) Ingest(ctx context.Context, request *pb_almanac.IngestRequest
 
 	appendRequest := &pb_almanac.AppendRequest{Entry: entry}
 	resultChan := make(chan error, len(appenders))
-	for _, appender := range appenders {
+	for _, a := range appenders {
+		// Avoid capturing the loop variable.
+		appender := a
 		go func() {
 			_, err := appender.Append(ctx, appendRequest)
 			resultChan <- err

@@ -203,9 +203,8 @@ func isEmptyDir(name string) (bool, error) {
 	_, err = f.Readdirnames(1)
 	if err == io.EOF {
 		return true, nil
-	} else {
-		return false, err
 	}
 
-	return false, nil
+	// Definitely not empty. Also correct if err is nil.
+	return false, err
 }
