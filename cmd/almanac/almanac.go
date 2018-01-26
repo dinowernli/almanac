@@ -8,6 +8,7 @@ import (
 	"dinowernli.me/almanac/pkg/cluster"
 	pb_almanac "dinowernli.me/almanac/proto"
 
+	"dinowernli.me/almanac/pkg/storage"
 	"github.com/alecthomas/kingpin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -20,8 +21,9 @@ const (
 )
 
 var (
-	flagStorageType = kingpin.Flag("storage", "Which kind of storage to use").Default("memory").Enum("memory", "gcs")
-	flagGcsBucket   = kingpin.Flag("gcs.bucket", "Which gcs bucket to use for storage").Default("almanac-dev").String()
+	flagStorageType = kingpin.Flag("storage", "Which kind of storage to use").Default(storage.StorageTypeMemory).Enum(storage.StorageTypeMemory, storage.StorageTypeDisk, storage.StorageTypeGcs)
+	flagGcsBucket   = kingpin.Flag("storage.gcs.bucket", "Which gcs bucket to use for storage").Default("almanac-dev").String()
+	flagDiskPath    = kingpin.Flag("storage.disk.path", "An existing empty directory to use as root for storage").Default("/tmp/almanac-dev").String()
 
 	flagAppenderPorts = kingpin.Flag("appender_ports", "Which ports to run appenders on").Default("5001", "5002", "5003", "5004", "5005").Ints()
 	flagHttpPort      = kingpin.Flag("http_port", "which port to run the http server on").Default("12345").Int()
@@ -53,6 +55,7 @@ func main() {
 
 		StorageType: *flagStorageType,
 		GcsBucket:   *flagGcsBucket,
+		DiskPath:    *flagDiskPath,
 	}
 
 	cluster, err := cluster.CreateCluster(ctx, logger, conf, *flagAppenderPorts, *flagIngestFanout)

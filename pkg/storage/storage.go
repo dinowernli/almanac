@@ -2,8 +2,8 @@ package storage
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
+	"os"
 	"strings"
 
 	"dinowernli.me/almanac/pkg/util"
@@ -15,9 +15,11 @@ import (
 )
 
 const (
-	tempDirPrefix = "almanac"
-	chunkPrefix   = "/chunk/"
+	StorageTypeMemory = "memory"
+	StorageTypeDisk   = "disk"
+	StorageTypeGcs    = "gcs"
 
+	chunkPrefix    = "chunk-"
 	chunkTypeLabel = "chunk_type"
 )
 
@@ -152,18 +154,16 @@ func (s *Storage) DeleteChunk(ctx context.Context, chunkIdProto *pb_almanac.Chun
 	return nil
 }
 
-// NewTempDiskStorage creates a backend backed by a new temporary directory.
-func NewTempDiskStorage() (*Storage, error) {
-	path, err := ioutil.TempDir("", tempDirPrefix)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create temp dir: %v", err)
-	}
-	return NewDiskStorage(path)
-}
-
-// NewDiskStorage creates a backend backed by a root directory on disk.
+// NewDiskStorage creates a backend backed by a root directory on disk. The supplied path
+// must point to an existing empty directory.
 func NewDiskStorage(path string) (*Storage, error) {
-	log.Printf("created storage at path: %s\n", path)
+	empty, err := isEmptyDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to determine whether path %s is empty dir: %v", path, err)
+	}
+	if !empty {
+		return nil, fmt.Errorf("expected path %s to be an empty directory, but wasn't")
+	}
 	return newStorage(&diskBackend{path: path})
 }
 
@@ -191,4 +191,21 @@ func newStorage(b backend) (*Storage, error) {
 
 func chunkKey(chunkId string) string {
 	return chunkPrefix + chunkId
+}
+
+func isEmptyDir(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	} else {
+		return false, err
+	}
+
+	return false, nil
 }

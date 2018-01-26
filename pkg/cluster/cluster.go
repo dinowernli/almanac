@@ -18,11 +18,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	storageTypeMemory = "memory"
-	storageTypeGcs    = "gcs"
-)
-
 // Config holds a few configurable values defining the behavior of the system.
 type Config struct {
 	SmallChunkMaxEntries int
@@ -35,6 +30,7 @@ type Config struct {
 
 	StorageType string
 	GcsBucket   string
+	DiskPath    string
 }
 
 // LocalCluster holds a test setup ready to use for testing.
@@ -54,15 +50,20 @@ type LocalCluster struct {
 func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, appenderPorts []int, ingestFanout int) (*LocalCluster, error) {
 	var err error
 	var storage *st.Storage
-	if config.StorageType == storageTypeMemory {
+	if config.StorageType == st.StorageTypeMemory {
 		storage, err = st.NewMemoryStorage()
 		if err != nil {
 			return nil, fmt.Errorf("unable to create memory storage: %v", err)
 		}
-	} else if config.StorageType == storageTypeGcs {
+	} else if config.StorageType == st.StorageTypeGcs {
 		storage, err = st.NewGcsStorage(config.GcsBucket)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create gcs storage: %v", err)
+		}
+	} else if config.StorageType == st.StorageTypeDisk {
+		storage, err = st.NewDiskStorage(config.DiskPath)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create disk storage: %v", err)
 		}
 	} else {
 		return nil, fmt.Errorf("unrecognized storage type: %s", config.StorageType)
