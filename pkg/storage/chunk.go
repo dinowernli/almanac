@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"dinowernli.me/almanac/pkg/index"
-	"dinowernli.me/almanac/pkg/util"
-	pb_almanac "dinowernli.me/almanac/proto"
+	"github.com/dinowernli/almanac/pkg/index"
+	"github.com/dinowernli/almanac/pkg/util"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"golang.org/x/net/context"
 )

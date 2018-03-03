@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"dinowernli.me/almanac/pkg/service/discovery"
-	st "dinowernli.me/almanac/pkg/storage"
-	pb_almanac "dinowernli.me/almanac/proto"
+	"github.com/dinowernli/almanac/pkg/service/discovery"
+	st "github.com/dinowernli/almanac/pkg/storage"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

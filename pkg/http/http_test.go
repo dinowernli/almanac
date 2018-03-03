@@ -3,7 +3,7 @@ package http
 import (
 	"testing"
 
-	pb_almanac "dinowernli.me/almanac/proto"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/stretchr/testify/assert"
 )

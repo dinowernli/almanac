@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	st "dinowernli.me/almanac/pkg/storage"
-	pb_almanac "dinowernli.me/almanac/proto"
+	st "github.com/dinowernli/almanac/pkg/storage"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

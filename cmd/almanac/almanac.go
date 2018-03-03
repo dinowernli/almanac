@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"dinowernli.me/almanac/pkg/cluster"
-	"dinowernli.me/almanac/pkg/storage"
-	pb_almanac "dinowernli.me/almanac/proto"
+	"github.com/dinowernli/almanac/pkg/cluster"
+	"github.com/dinowernli/almanac/pkg/storage"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/prometheus/client_golang/prometheus"

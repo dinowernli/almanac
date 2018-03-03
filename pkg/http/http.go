@@ -6,8 +6,8 @@ import (
 	"io"
 	"strconv"
 
-	"dinowernli.me/almanac/pkg/http/templates"
-	pb_almanac "dinowernli.me/almanac/proto"
+	"github.com/dinowernli/almanac/pkg/http/templates"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 )
 
 var (

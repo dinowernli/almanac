@@ -3,8 +3,8 @@ package mixer
 import (
 	"fmt"
 
-	st "dinowernli.me/almanac/pkg/storage"
-	pb_almanac "dinowernli.me/almanac/proto"
+	st "github.com/dinowernli/almanac/pkg/storage"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"golang.org/x/net/context"
 )

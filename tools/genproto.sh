@@ -2,7 +2,7 @@
 
 set -x
 
-ALMANAC_ROOT=$GOPATH/src/dinowernli.me/almanac
+ALMANAC_ROOT=$GOPATH/src/github.com/dinowernli/almanac
 PROTO_DIR=$ALMANAC_ROOT/proto
 
 TMPDIR=`mktemp -d`
