@@ -21,8 +21,9 @@ const (
 )
 
 var (
-	flagStorageType = kingpin.Flag("storage", "Which kind of storage to use").Default(storage.StorageTypeMemory).Enum(storage.StorageTypeMemory, storage.StorageTypeDisk, storage.StorageTypeGcs)
+	flagStorageType = kingpin.Flag("storage", "Which kind of storage to use").Default(storage.StorageTypeMemory).Enum(storage.StorageTypeMemory, storage.StorageTypeDisk, storage.StorageTypeGcs, storage.StorageTypeS3)
 	flagGcsBucket   = kingpin.Flag("storage.gcs.bucket", "Which gcs bucket to use for storage").Default("almanac-dev").String()
+	flagS3Bucket    = kingpin.Flag("storage.s3.bucket", "Which s3 bucket to use for storage").Default("almanac-dev").String()
 	flagDiskPath    = kingpin.Flag("storage.disk.path", "An existing empty directory to use as root for storage").Default("/tmp/almanac-dev").String()
 
 	flagAppenderPorts = kingpin.Flag("appender_ports", "Which ports to run appenders on").Default("5001", "5002", "5003", "5004", "5005").Ints()
@@ -55,6 +56,7 @@ func main() {
 
 		StorageType: *flagStorageType,
 		GcsBucket:   *flagGcsBucket,
+		S3Bucket:    *flagS3Bucket,
 		DiskPath:    *flagDiskPath,
 	}
 
