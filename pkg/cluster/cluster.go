@@ -30,6 +30,7 @@ type Config struct {
 
 	StorageType string
 	GcsBucket   string
+	S3Bucket    string
 	DiskPath    string
 }
 
@@ -59,6 +60,11 @@ func CreateCluster(ctx context.Context, logger *logrus.Logger, config *Config, a
 		storage, err = st.NewGcsStorage(config.GcsBucket)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create gcs storage: %v", err)
+		}
+	} else if config.StorageType == st.StorageTypeS3 {
+		storage, err = st.NewS3Storage(config.S3Bucket)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create s3 storage: %v", err)
 		}
 	} else if config.StorageType == st.StorageTypeDisk {
 		storage, err = st.NewDiskStorage(config.DiskPath)

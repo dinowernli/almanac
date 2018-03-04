@@ -18,6 +18,7 @@ const (
 	StorageTypeMemory = "memory"
 	StorageTypeDisk   = "disk"
 	StorageTypeGcs    = "gcs"
+	StorageTypeS3     = "s3"
 
 	chunkPrefix    = "chunk-"
 	chunkTypeLabel = "chunk_type"
@@ -177,6 +178,15 @@ func NewGcsStorage(bucketName string) (*Storage, error) {
 	backend, err := newGcsBackend(bucketName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create gcs backend: %v", err)
+	}
+	return newStorage(backend)
+}
+
+// NewS3Storage returns a storage backed by the supplied S£ bucket.
+func NewS3Storage(bucketName string) (*Storage, error) {
+	backend, err := newS3Backend(bucketName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create S3 backend: %v", err)
 	}
 	return newStorage(backend)
 }
