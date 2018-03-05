@@ -12,8 +12,7 @@ BACKUP_PROTO_DIR=$BACKUP_ROOT/proto
 
 # Do the actual generation.
 protoc \
-  --go_out=$ALMANAC_ROOT \
-  --go_out=plugins=grpc:. \
+  --go_out=plugins=grpc:$ALMANAC_ROOT \
   --proto_path=$ALMANAC_ROOT \
   $PROTO_DIR/*.proto
 PROTOC_OUT=$?
