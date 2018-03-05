@@ -16,18 +16,22 @@ const ()
 // S3 bucket name. Note that with the current interface, the AWS_REGION environment
 // variable must be specified to use this backend.
 func newS3Backend(bucketName string) (*s3Backend, error) {
-	return &s3Backend{bucketName: aws.String(bucketName)}, nil
+	sess := session.Must(session.NewSession())
+	s3Client := s3.New(sess)
+
+	return &s3Backend{
+		bucketName: aws.String(bucketName),
+		s3Client:   s3Client,
+	}, nil
 }
 
 type s3Backend struct {
 	bucketName *string
+	s3Client   *s3.S3
 }
 
-func (b *s3Backend) read(_ context.Context, id string) ([]byte, error) {
-	sess := session.Must(session.NewSession())
-
-	s3Client := s3.New(sess)
-	getOutput, err := s3Client.GetObject(&s3.GetObjectInput{
+func (b *s3Backend) read(ctx context.Context, id string) ([]byte, error) {
+	getOutput, err := b.s3Client.GetObjectWithContext(ctx, &s3.GetObjectInput{
 		Bucket: b.bucketName,
 		Key:    aws.String(id),
 	})
@@ -38,11 +42,8 @@ func (b *s3Backend) read(_ context.Context, id string) ([]byte, error) {
 	return ioutil.ReadAll(getOutput.Body)
 }
 
-func (b *s3Backend) write(_ context.Context, id string, contents []byte) error {
-	sess := session.Must(session.NewSession())
-
-	s3Client := s3.New(sess)
-	_, err := s3Client.PutObject(&s3.PutObjectInput{
+func (b *s3Backend) write(ctx context.Context, id string, contents []byte) error {
+	_, err := b.s3Client.PutObjectWithContext(ctx, &s3.PutObjectInput{
 		Bucket: b.bucketName,
 		Key:    aws.String(id),
 		Body:   bytes.NewReader(contents),
@@ -51,11 +52,8 @@ func (b *s3Backend) write(_ context.Context, id string, contents []byte) error {
 	return err
 }
 
-func (b *s3Backend) list(_ context.Context, prefix string) ([]string, error) {
-	sess := session.Must(session.NewSession())
-
-	s3Client := s3.New(sess)
-	listOutput, err := s3Client.ListObjects(&s3.ListObjectsInput{
+func (b *s3Backend) list(ctx context.Context, prefix string) ([]string, error) {
+	listOutput, err := b.s3Client.ListObjectsWithContext(ctx, &s3.ListObjectsInput{
 		Bucket: b.bucketName,
 		Prefix: aws.String(prefix),
 	})
@@ -71,11 +69,8 @@ func (b *s3Backend) list(_ context.Context, prefix string) ([]string, error) {
 	return keys, nil
 }
 
-func (b *s3Backend) delete(_ context.Context, id string) error {
-	sess := session.Must(session.NewSession())
-
-	s3Client := s3.New(sess)
-	_, err := s3Client.DeleteObject(&s3.DeleteObjectInput{
+func (b *s3Backend) delete(ctx context.Context, id string) error {
+	_, err := b.s3Client.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Bucket: b.bucketName,
 		Key:    aws.String(id),
 	})
