@@ -19,7 +19,7 @@ protoc \
 PROTOC_OUT=$?
 find $PROTO_DIR -name '*.go' | xargs gofmt -s -w
 
-DIFF=`diff -ry $BACKUP_PROTO_DIR $PROTO_DIR`
+DIFF=`diff -rq $BACKUP_PROTO_DIR $PROTO_DIR`
 rm -rf $TMPDIR
 
 # Definitely error out if protoc failed.
