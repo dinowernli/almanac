@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	st "dinowernli.me/almanac/pkg/storage"
-	"dinowernli.me/almanac/pkg/util"
-	pb_almanac "dinowernli.me/almanac/proto"
+	st "github.com/dinowernli/almanac/pkg/storage"
+	"github.com/dinowernli/almanac/pkg/util"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"

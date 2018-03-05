@@ -3,7 +3,7 @@ package discovery
 import (
 	"fmt"
 
-	pb_almanac "dinowernli.me/almanac/proto"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"google.golang.org/grpc"
 )

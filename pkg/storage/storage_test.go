@@ -3,11 +3,12 @@ package storage
 import (
 	"testing"
 
-	pb_almanac "dinowernli.me/almanac/proto"
+	pb_almanac "github.com/dinowernli/almanac/proto"
+
+	"reflect"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-	"reflect"
 )
 
 var (

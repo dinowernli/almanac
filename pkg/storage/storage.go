@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"dinowernli.me/almanac/pkg/util"
-	pb_almanac "dinowernli.me/almanac/proto"
+	"github.com/dinowernli/almanac/pkg/util"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"

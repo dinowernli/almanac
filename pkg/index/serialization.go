@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	pb_almanac "dinowernli.me/almanac/proto"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 )
 
 // Serialize returns a proto with the contents of the supplied index.

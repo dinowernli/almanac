@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"dinowernli.me/almanac/pkg/storage"
-	pb_almanac "dinowernli.me/almanac/proto"
+	"github.com/dinowernli/almanac/pkg/storage"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"

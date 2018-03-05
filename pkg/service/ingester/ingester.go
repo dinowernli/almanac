@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	almHttp "dinowernli.me/almanac/pkg/http"
-	dc "dinowernli.me/almanac/pkg/service/discovery"
-	"dinowernli.me/almanac/pkg/util"
-	pb_almanac "dinowernli.me/almanac/proto"
+	almHttp "github.com/dinowernli/almanac/pkg/http"
+	dc "github.com/dinowernli/almanac/pkg/service/discovery"
+	"github.com/dinowernli/almanac/pkg/util"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"

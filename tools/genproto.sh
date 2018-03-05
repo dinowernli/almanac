@@ -2,7 +2,7 @@
 
 set -x
 
-ALMANAC_ROOT=$GOPATH/src/dinowernli.me/almanac
+ALMANAC_ROOT=$GOPATH/src/github.com/dinowernli/almanac
 PROTO_DIR=$ALMANAC_ROOT/proto
 
 TMPDIR=`mktemp -d`
@@ -12,8 +12,7 @@ BACKUP_PROTO_DIR=$BACKUP_ROOT/proto
 
 # Do the actual generation.
 protoc \
-  --go_out=$ALMANAC_ROOT \
-  --go_out=plugins=grpc:. \
+  --go_out=plugins=grpc:$ALMANAC_ROOT \
   --proto_path=$ALMANAC_ROOT \
   $PROTO_DIR/*.proto
 PROTOC_OUT=$?

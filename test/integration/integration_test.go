@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"dinowernli.me/almanac/pkg/cluster"
-	pb_almanac "dinowernli.me/almanac/proto"
+	"github.com/dinowernli/almanac/pkg/cluster"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

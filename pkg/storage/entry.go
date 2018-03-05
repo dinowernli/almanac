@@ -1,7 +1,7 @@
 package storage
 
 import (
-	pb_almanac "dinowernli.me/almanac/proto"
+	pb_almanac "github.com/dinowernli/almanac/proto"
 )
 
 // OldestEntryFirst is an ordering over log entries by ascending timestamp.

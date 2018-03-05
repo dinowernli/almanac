@@ -4,7 +4,7 @@ set -x
 
 RELATIVE_TEMPLATES_DIR=pkg/http/templates
 
-ALMANAC_ROOT=$GOPATH/src/dinowernli.me/almanac
+ALMANAC_ROOT=$GOPATH/src/github.com/dinowernli/almanac
 TEMPLATES_DIR=$ALMANAC_ROOT/$RELATIVE_TEMPLATES_DIR
 
 TMPDIR=`mktemp -d`
